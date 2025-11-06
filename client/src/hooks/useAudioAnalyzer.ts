@@ -228,11 +228,19 @@ export function useAudioAnalyzer(settings: AudioSettings) {
     }
   }, []);
 
+  const reset = useCallback(() => {
+    setSpectrogramData(null);
+    setAudioBuffer(null);
+    recordedPCMChunksRef.current = [];
+    spectrogramFramesRef.current = { frequencies: [], timeStamps: [] };
+  }, []);
+
   return {
     startRecording,
     stopRecording,
     playRecording,
     stopPlayback,
+    reset,
     spectrogramData,
     audioBuffer,
     isProcessing,

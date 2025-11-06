@@ -42,6 +42,7 @@ export default function VocalAnalyzer() {
     stopRecording,
     playRecording,
     stopPlayback,
+    reset,
     spectrogramData,
     audioBuffer,
     isProcessing,
@@ -104,6 +105,7 @@ export default function VocalAnalyzer() {
   };
 
   const handleReset = () => {
+    reset();
     setRecordingState('idle');
     setCurrentTime(0);
     setPlaybackTime(0);
