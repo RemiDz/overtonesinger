@@ -33,58 +33,61 @@ export function ZoomControls({
   const endTime = Math.min(startTime + visibleDuration, totalDuration);
 
   return (
-    <div className="flex items-center h-full px-6 gap-4">
-      {/* Zoom Slider */}
-      <div className="flex items-center gap-3 flex-1 max-w-md">
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          Zoom
-        </span>
-        <Slider
-          value={[zoom]}
-          onValueChange={(values) => onZoomChange(values[0])}
-          min={0}
-          max={100}
-          step={1}
-          disabled={disabled}
-          className="flex-1"
-          data-testid="slider-zoom"
-        />
-      </div>
-
-      {/* Range Display */}
-      {totalDuration > 0 && (
-        <div className="text-sm font-mono text-muted-foreground">
-          Showing {formatTime(startTime)} - {formatTime(endTime)} of {formatTime(totalDuration)}
-        </div>
-      )}
-
-      {/* Fit to Screen Button */}
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={onFitToScreen}
-        disabled={disabled}
-        className="gap-2"
-        data-testid="button-fit-screen"
-      >
-        <Maximize2 className="h-4 w-4" />
-        Fit to Screen
-      </Button>
-
-      {/* Scroll Position (if zoomed in) */}
-      {zoom < 100 && totalDuration > 0 && (
-        <div className="flex items-center gap-2 ml-2">
-          <span className="text-xs font-medium text-muted-foreground">Scroll</span>
+    <div className="w-full px-4 py-2">
+      {/* Top Row: Zoom Slider and Fit Button */}
+      <div className="flex items-center gap-4 mb-2">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide whitespace-nowrap">
+            Zoom
+          </span>
           <Slider
-            value={[scrollPosition * 100]}
-            onValueChange={(values) => onScrollChange(values[0] / 100)}
+            value={[zoom]}
+            onValueChange={(values) => onZoomChange(values[0])}
             min={0}
             max={100}
             step={1}
             disabled={disabled}
-            className="w-32"
-            data-testid="slider-scroll"
+            className="flex-1"
+            data-testid="slider-zoom"
           />
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onFitToScreen}
+          disabled={disabled}
+          className="gap-2 flex-shrink-0"
+          data-testid="button-fit-screen"
+        >
+          <Maximize2 className="h-4 w-4" />
+          <span className="hidden sm:inline">Fit to Screen</span>
+          <span className="sm:hidden">Fit</span>
+        </Button>
+      </div>
+
+      {/* Bottom Row: Scroll Slider and Time Display */}
+      {totalDuration > 0 && (
+        <div className="flex items-center gap-4">
+          {zoom < 100 && (
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide whitespace-nowrap">
+                Scroll
+              </span>
+              <Slider
+                value={[scrollPosition * 100]}
+                onValueChange={(values) => onScrollChange(values[0] / 100)}
+                min={0}
+                max={100}
+                step={1}
+                disabled={disabled}
+                className="flex-1"
+                data-testid="slider-scroll"
+              />
+            </div>
+          )}
+          <div className="text-xs font-mono text-muted-foreground whitespace-nowrap flex-shrink-0">
+            {formatTime(startTime)} - {formatTime(endTime)} / {formatTime(totalDuration)}
+          </div>
         </div>
       )}
     </div>

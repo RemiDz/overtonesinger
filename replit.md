@@ -37,8 +37,10 @@ Perfect for vocal exercises, overtone singing analysis, and understanding harmon
 ### Zoom & Navigation
 - Auto-zoom to fit entire recording when capture stops
 - Manual zoom slider (0-100%) to examine specific portions
-- Horizontal scroll through recorded data
+- Horizontal scroll slider appears when zoomed in
+- Time range display shows visible portion (e.g., "0:00 - 0:05 / 0:10")
 - "Fit to Screen" button to quickly view full capture
+- Two-row layout prevents overlap on mobile devices
 
 ## Technology Stack
 
@@ -138,6 +140,8 @@ This is a professional audio analysis tool with a clean, function-first design:
 
 ## Recent Changes
 
+- 2025-11-06: Reorganized layout for mobile - all controls now stack vertically above/below spectrogram (no horizontal scrolling)
+- 2025-11-06: Fixed zoom controls overlap - split into two rows to prevent timer text from covering sliders
 - 2025-11-06: Added comprehensive settings panel with FFT size, frequency range, color schemes, and intensity controls
 - 2025-11-06: Implemented harmonic relationship detection with viewport-scoped analysis
 - 2025-11-06: Added WAV/PNG export functionality and synchronized playback position indicator
