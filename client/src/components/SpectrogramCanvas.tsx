@@ -305,6 +305,7 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     if (visibleIndices.length === 0) return;
 
     const declutterThreshold = declutterAmount / 100;
+    const barWidth = Math.max(1, chartWidth / visibleIndices.length);
 
     visibleIndices.forEach((timeIndex) => {
       const time = timeStamps[timeIndex];
@@ -312,20 +313,26 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
       const x = padding.left + normalizedTime * chartWidth;
 
       const freqData = frequencies[timeIndex];
-      
       const processedMagnitudes = applyDeclutter(freqData, declutterThreshold);
 
-      processedMagnitudes.forEach((magnitude, freqIndex) => {
-        const freq = (freqIndex / freqData.length) * maxFrequency;
-        if (freq > maxFrequency || freq < minFrequency) return;
+      for (let freqIndex = 0; freqIndex < processedMagnitudes.length - 1; freqIndex++) {
+        const magnitude = processedMagnitudes[freqIndex];
+        if (magnitude === 0) continue;
 
-        const y = freqToY(freq, padding.top, chartHeight);
+        const freq1 = (freqIndex / freqData.length) * maxFrequency;
+        const freq2 = ((freqIndex + 1) / freqData.length) * maxFrequency;
+        
+        if (freq1 > maxFrequency || freq2 < minFrequency) continue;
+
+        const y1 = freqToY(Math.max(freq1, minFrequency), padding.top, chartHeight);
+        const y2 = freqToY(Math.min(freq2, maxFrequency), padding.top, chartHeight);
+        
+        const barHeight = Math.abs(y2 - y1);
         
         const color = magnitudeToColor(magnitude);
         ctx.fillStyle = color;
-        const barWidth = Math.max(1, chartWidth / visibleIndices.length);
-        ctx.fillRect(x, y, barWidth, 2);
-      });
+        ctx.fillRect(x, Math.min(y1, y2), barWidth, Math.max(barHeight, 1));
+      }
     });
   };
 
