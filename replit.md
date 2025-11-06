@@ -143,8 +143,9 @@ This is a professional audio analysis tool with a clean, function-first design:
 
 ## Recent Changes
 
+- 2025-11-06: **Maximized spectrogram space** - removed container padding (p-8→p-0) and minimized canvas padding
+- 2025-11-06: Reduced canvas padding further (top: 20→12, bottom: 32→24, right: 16→8, left: 40→32)
 - 2025-11-06: Optimized layout for mobile - centered Advanced Settings dialog and maximized spectrogram space
-- 2025-11-06: Reduced canvas padding (top: 32→20, bottom: 48→32, right: 32→16) for larger visualization area
 - 2025-11-06: Reduced control panel padding (py-2→py-1.5) to give more space to spectrogram
 - 2025-11-06: Changed Advanced Settings to be centered on mobile (95vw width, max-w-md)
 - 2025-11-06: Changed spectrogram background to always use black for better sound detail visibility
