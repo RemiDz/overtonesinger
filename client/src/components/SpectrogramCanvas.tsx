@@ -9,6 +9,7 @@ interface SpectrogramCanvasProps {
   isPlaying?: boolean;
   playbackTime?: number;
   declutterAmount: number;
+  showFrequencyMarkers?: boolean;
 }
 
 export interface SpectrogramCanvasHandle {
@@ -16,7 +17,7 @@ export interface SpectrogramCanvasHandle {
 }
 
 export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, SpectrogramCanvasProps>(
-  ({ spectrogramData, viewportSettings, currentTime, isRecording, isPlaying = false, playbackTime = 0, declutterAmount }, ref) => {
+  ({ spectrogramData, viewportSettings, currentTime, isRecording, isPlaying = false, playbackTime = 0, declutterAmount, showFrequencyMarkers = true }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -54,7 +55,7 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     ctx.scale(dpr, dpr);
 
     drawSpectrogram(ctx, dimensions.width, dimensions.height);
-  }, [spectrogramData, viewportSettings, currentTime, dimensions, declutterAmount, mousePos, isPlaying, playbackTime]);
+  }, [spectrogramData, viewportSettings, currentTime, dimensions, declutterAmount, mousePos, isPlaying, playbackTime, showFrequencyMarkers]);
 
   const drawSpectrogram = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     const padding = { top: 32, right: 32, bottom: 48, left: 64 };
@@ -72,6 +73,10 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     drawGrid(ctx, padding, chartWidth, chartHeight);
     drawAxes(ctx, padding, chartWidth, chartHeight);
     drawSpectrogramData(ctx, padding, chartWidth, chartHeight);
+    
+    if (showFrequencyMarkers) {
+      drawFrequencyMarkers(ctx, padding, chartWidth, chartHeight);
+    }
     
     if (isPlaying) {
       drawPlaybackIndicator(ctx, padding, chartWidth, chartHeight);
@@ -323,6 +328,186 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     ctx.stroke();
 
     ctx.setLineDash([]);
+  };
+
+  const drawFrequencyMarkers = (
+    ctx: CanvasRenderingContext2D,
+    padding: { top: number; right: number; bottom: number; left: number },
+    chartWidth: number,
+    chartHeight: number
+  ) => {
+    if (!spectrogramData || spectrogramData.frequencies.length === 0) return;
+
+    const staticMarkers = [
+      { freq: 110, label: 'A2' },
+      { freq: 220, label: 'A3' },
+      { freq: 440, label: 'A4' },
+      { freq: 880, label: 'A5' },
+      { freq: 1760, label: 'A6' },
+      { freq: 1000, label: '1k' },
+      { freq: 2000, label: '2k' },
+      { freq: 3000, label: '3k' },
+      { freq: 4000, label: '4k' },
+    ];
+
+    const minFreq = 20;
+    const maxFreq = 5000;
+    const logMin = Math.log10(minFreq);
+    const logMax = Math.log10(maxFreq);
+
+    staticMarkers.forEach(({ freq, label }) => {
+      if (freq < minFreq || freq > maxFreq) return;
+
+      const logFreq = Math.log10(freq);
+      const normalizedY = 1 - (logFreq - logMin) / (logMax - logMin);
+      const y = padding.top + normalizedY * chartHeight;
+
+      ctx.strokeStyle = 'hsl(var(--muted-foreground) / 0.15)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 4]);
+
+      ctx.beginPath();
+      ctx.moveTo(padding.left, y);
+      ctx.lineTo(padding.left + chartWidth, y);
+      ctx.stroke();
+
+      ctx.fillStyle = 'hsl(var(--muted-foreground) / 0.5)';
+      ctx.font = '9px Inter, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, padding.left - 4, y);
+    });
+
+    const detectedHarmonics = detectDominantFrequencies(spectrogramData.frequencies);
+    
+    detectedHarmonics.forEach(({ fundamental, harmonics, strength }) => {
+      if (strength < 0.3) return;
+
+      harmonics.forEach(({ freq, strength: harmonicStrength }, index) => {
+        if (freq < minFreq || freq > maxFreq) return;
+
+        const logFreq = Math.log10(freq);
+        const normalizedY = 1 - (logFreq - logMin) / (logMax - logMin);
+        const y = padding.top + normalizedY * chartHeight;
+
+        const isFundamental = index === 0;
+        const alpha = Math.min(0.7, harmonicStrength * (isFundamental ? 1.5 : 1.2));
+
+        ctx.strokeStyle = `hsl(var(--primary) / ${alpha})`;
+        ctx.lineWidth = isFundamental ? 2 : 1.5;
+        ctx.setLineDash(isFundamental ? [8, 4] : [4, 2]);
+
+        ctx.beginPath();
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(padding.left + chartWidth, y);
+        ctx.stroke();
+
+        if (isFundamental) {
+          ctx.fillStyle = `hsl(var(--primary) / ${Math.min(0.9, alpha + 0.2)})`;
+          ctx.font = 'bold 11px Inter, sans-serif';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(`${Math.round(freq)}Hz (F0)`, padding.left + 8, y - 2);
+        }
+      });
+    });
+
+    ctx.setLineDash([]);
+  };
+
+  const detectDominantFrequencies = (frequencies: number[][]): Array<{ fundamental: number; harmonics: Array<{ freq: number; strength: number }>; strength: number }> => {
+    if (frequencies.length === 0) return [];
+
+    const maxFreq = 5000;
+    const numBins = frequencies[0].length;
+    const binToFreq = (bin: number) => (bin / numBins) * maxFreq;
+    const freqToBin = (freq: number) => Math.round((freq / maxFreq) * numBins);
+
+    const totalDuration = spectrogramData?.timeStamps[spectrogramData.timeStamps.length - 1] || 1;
+    const zoomPercent = Math.max(1, Math.min(100, viewportSettings.zoom));
+    const visibleDuration = totalDuration * (zoomPercent / 100);
+    const scrollableRange = Math.max(0, totalDuration - visibleDuration);
+    const startTime = viewportSettings.scrollPosition * scrollableRange;
+    const endTime = startTime + visibleDuration;
+
+    const visibleFrames = frequencies.filter((_, idx) => {
+      const time = spectrogramData?.timeStamps[idx] || 0;
+      return time >= startTime && time <= endTime;
+    });
+
+    if (visibleFrames.length === 0) return [];
+
+    const averageMagnitudes = new Float32Array(numBins);
+    visibleFrames.forEach(frame => {
+      frame.forEach((mag, i) => {
+        averageMagnitudes[i] += mag;
+      });
+    });
+    averageMagnitudes.forEach((_, i) => {
+      averageMagnitudes[i] /= visibleFrames.length;
+    });
+
+    const peaks: Array<{ bin: number; freq: number; magnitude: number }> = [];
+    for (let i = 2; i < averageMagnitudes.length - 2; i++) {
+      if (
+        averageMagnitudes[i] > averageMagnitudes[i - 1] &&
+        averageMagnitudes[i] > averageMagnitudes[i + 1] &&
+        averageMagnitudes[i] > averageMagnitudes[i - 2] &&
+        averageMagnitudes[i] > averageMagnitudes[i + 2] &&
+        averageMagnitudes[i] > 0.15
+      ) {
+        const freq = binToFreq(i);
+        if (freq >= 80 && freq <= 1200) {
+          peaks.push({ bin: i, freq, magnitude: averageMagnitudes[i] });
+        }
+      }
+    }
+
+    peaks.sort((a, b) => b.magnitude - a.magnitude);
+    const topPeaks = peaks.slice(0, 3);
+
+    const harmonicSeries: Array<{ fundamental: number; harmonics: Array<{ freq: number; strength: number }>; strength: number }> = [];
+
+    topPeaks.forEach(peak => {
+      const fundamental = peak.freq;
+      const harmonics: Array<{ freq: number; strength: number }> = [
+        { freq: fundamental, strength: peak.magnitude }
+      ];
+      
+      for (let n = 2; n <= 8; n++) {
+        const expectedHarmonic = fundamental * n;
+        if (expectedHarmonic > maxFreq) break;
+
+        const expectedBin = freqToBin(expectedHarmonic);
+        const tolerance = 3;
+        
+        let maxMag = 0;
+        let bestBin = expectedBin;
+        for (let b = expectedBin - tolerance; b <= expectedBin + tolerance; b++) {
+          if (b >= 0 && b < averageMagnitudes.length) {
+            if (averageMagnitudes[b] > maxMag) {
+              maxMag = averageMagnitudes[b];
+              bestBin = b;
+            }
+          }
+        }
+
+        if (maxMag > 0.08) {
+          const actualFreq = binToFreq(bestBin);
+          harmonics.push({ freq: actualFreq, strength: maxMag });
+        }
+      }
+
+      if (harmonics.length >= 3) {
+        harmonicSeries.push({
+          fundamental,
+          harmonics,
+          strength: Math.min(1, peak.magnitude * 1.5)
+        });
+      }
+    });
+
+    return harmonicSeries;
   };
 
   const drawPlaybackIndicator = (
