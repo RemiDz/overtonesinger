@@ -334,7 +334,7 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
 
     const maxMagnitude = Math.max(...magnitudes);
     
-    const noiseGateThreshold = maxMagnitude * (threshold / 100);
+    const noiseGateThreshold = maxMagnitude * threshold;
     
     const result = magnitudes.map(mag => {
       if (mag < noiseGateThreshold) {

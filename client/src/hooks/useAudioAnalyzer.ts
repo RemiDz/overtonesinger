@@ -36,7 +36,7 @@ export function useAudioAnalyzer(settings: AudioSettings) {
       const audioContext = new AudioContext({ sampleRate: settings.sampleRate });
       const analyzer = audioContext.createAnalyser();
       analyzer.fftSize = settings.fftSize;
-      analyzer.smoothingTimeConstant = 0.3;
+      analyzer.smoothingTimeConstant = 0;
 
       const source = audioContext.createMediaStreamSource(stream);
       const gainNode = audioContext.createGain();
@@ -146,6 +146,18 @@ export function useAudioAnalyzer(settings: AudioSettings) {
         combinedBuffer.set(chunk, offset);
         offset += chunk.length;
       });
+
+      let maxAbsValue = 0;
+      for (let i = 0; i < combinedBuffer.length; i++) {
+        maxAbsValue = Math.max(maxAbsValue, Math.abs(combinedBuffer[i]));
+      }
+      
+      if (maxAbsValue > 0.9) {
+        const normalizationFactor = 0.8 / maxAbsValue;
+        for (let i = 0; i < combinedBuffer.length; i++) {
+          combinedBuffer[i] *= normalizationFactor;
+        }
+      }
 
       setAudioBuffer(combinedBuffer);
     }
