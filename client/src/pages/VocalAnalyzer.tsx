@@ -211,65 +211,64 @@ export default function VocalAnalyzer() {
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      {/* Top Control Bar */}
-      <div className="flex-none h-16 border-b border-border bg-card">
-        <div className="flex items-center justify-between h-full px-6 gap-6">
-          {/* Left: Transport Controls */}
-          <div className="flex items-center gap-4">
-            <TransportControls
-              recordingState={recordingState}
-              onRecord={handleRecord}
-              onPlay={handlePlay}
-              onStop={handleStop}
-              onExportWAV={handleExportWAV}
-              onExportPNG={handleExportPNG}
-              hasRecording={!!audioBuffer}
-              disabled={isProcessing}
-            />
-            <div className="text-sm font-medium text-muted-foreground ml-2">
-              {getStatusText()}
-            </div>
-          </div>
-
-          {/* Right: Sliders and Settings */}
-          <div className="flex items-center gap-6">
-            <SliderControl
-              label="Gain"
-              value={audioSettings.microphoneGain}
-              onChange={handleGainChange}
-              min={0}
-              max={200}
-              className="w-32"
-              data-testid="slider-gain"
-            />
-            <SliderControl
-              label="Declutter"
-              value={audioSettings.declutterAmount}
-              onChange={handleDeclutterChange}
-              min={0}
-              max={100}
-              className="w-40"
-              data-testid="slider-declutter"
-            />
-            <AdvancedSettings
-              intensityScale={audioSettings.intensityScale}
-              intensityBoost={audioSettings.intensityBoost}
-              minFrequency={audioSettings.minFrequency}
-              maxFrequency={audioSettings.maxFrequency}
-              fftSize={audioSettings.fftSize}
-              colorScheme={audioSettings.colorScheme}
-              onIntensityScaleChange={handleIntensityScaleChange}
-              onIntensityBoostChange={handleIntensityBoostChange}
-              onFrequencyRangeChange={handleFrequencyRangeChange}
-              onFFTSizeChange={handleFFTSizeChange}
-              onColorSchemeChange={handleColorSchemeChange}
-            />
+      {/* Transport Controls Row */}
+      <div className="flex-none border-b border-border bg-card">
+        <div className="flex items-center justify-between px-4 py-2 gap-4">
+          <TransportControls
+            recordingState={recordingState}
+            onRecord={handleRecord}
+            onPlay={handlePlay}
+            onStop={handleStop}
+            onExportWAV={handleExportWAV}
+            onExportPNG={handleExportPNG}
+            hasRecording={!!audioBuffer}
+            disabled={isProcessing}
+          />
+          <div className="text-sm font-medium text-muted-foreground">
+            {getStatusText()}
           </div>
         </div>
       </div>
 
-      {/* Spectrogram Chart */}
-      <div className="flex-1 overflow-hidden">
+      {/* Settings Controls Row */}
+      <div className="flex-none border-b border-border bg-card">
+        <div className="flex flex-wrap items-center justify-center px-4 py-2 gap-4">
+          <SliderControl
+            label="Gain"
+            value={audioSettings.microphoneGain}
+            onChange={handleGainChange}
+            min={0}
+            max={200}
+            className="w-32"
+            data-testid="slider-gain"
+          />
+          <SliderControl
+            label="Declutter"
+            value={audioSettings.declutterAmount}
+            onChange={handleDeclutterChange}
+            min={0}
+            max={100}
+            className="w-40"
+            data-testid="slider-declutter"
+          />
+          <AdvancedSettings
+            intensityScale={audioSettings.intensityScale}
+            intensityBoost={audioSettings.intensityBoost}
+            minFrequency={audioSettings.minFrequency}
+            maxFrequency={audioSettings.maxFrequency}
+            fftSize={audioSettings.fftSize}
+            colorScheme={audioSettings.colorScheme}
+            onIntensityScaleChange={handleIntensityScaleChange}
+            onIntensityBoostChange={handleIntensityBoostChange}
+            onFrequencyRangeChange={handleFrequencyRangeChange}
+            onFFTSizeChange={handleFFTSizeChange}
+            onColorSchemeChange={handleColorSchemeChange}
+          />
+        </div>
+      </div>
+
+      {/* Spectrogram Chart - Full Width */}
+      <div className="flex-1 overflow-hidden w-full">
         <SpectrogramCanvas
           ref={spectrogramCanvasRef}
           spectrogramData={spectrogramData}
@@ -287,8 +286,8 @@ export default function VocalAnalyzer() {
         />
       </div>
 
-      {/* Zoom Controls Bar */}
-      <div className="flex-none h-12 border-t border-border bg-card">
+      {/* Zoom Controls Row */}
+      <div className="flex-none border-t border-border bg-card">
         <ZoomControls
           zoom={viewportSettings.zoom}
           scrollPosition={viewportSettings.scrollPosition}

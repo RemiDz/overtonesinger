@@ -130,6 +130,8 @@ Works on all modern browsers with Web Audio API support:
 
 This is a professional audio analysis tool with a clean, function-first design:
 - Maximum visualization space for the spectrogram
+- Mobile-friendly layout with controls stacked vertically above and below the spectrogram
+- No horizontal scrolling required - all controls accessible on phone screens
 - Compact, efficient controls that don't clutter the interface
 - Immediate visual feedback for all interactions
 - Accessibility-first with keyboard navigation and ARIA labels
