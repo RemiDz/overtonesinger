@@ -219,7 +219,7 @@ export default function VocalAnalyzer() {
     <div className="flex flex-col h-screen bg-background">
       {/* Transport Controls Row */}
       <div className="flex-none border-b border-border bg-card">
-        <div className="flex items-center justify-between px-4 py-2 gap-4">
+        <div className="flex items-center justify-between px-2 sm:px-4 py-1.5 gap-2 sm:gap-4">
           <TransportControls
             recordingState={recordingState}
             onRecord={handleRecord}
@@ -238,7 +238,7 @@ export default function VocalAnalyzer() {
 
       {/* Settings Controls Row */}
       <div className="flex-none border-b border-border bg-card">
-        <div className="flex items-center justify-center px-2 sm:px-4 py-2 gap-2 sm:gap-4">
+        <div className="flex items-center justify-center px-2 sm:px-4 py-1.5 gap-2 sm:gap-4">
           <SliderControl
             icon={Volume2}
             value={audioSettings.microphoneGain}

@@ -33,9 +33,9 @@ export function ZoomControls({
   const endTime = Math.min(startTime + visibleDuration, totalDuration);
 
   return (
-    <div className="w-full px-4 py-2">
+    <div className="w-full px-2 sm:px-4 py-1.5">
       {/* Top Row: Zoom Slider and Fit Button */}
-      <div className="flex items-center gap-4 mb-2">
+      <div className="flex items-center gap-2 sm:gap-4 mb-1.5">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide whitespace-nowrap">
             Zoom
@@ -67,7 +67,7 @@ export function ZoomControls({
 
       {/* Bottom Row: Scroll Slider and Time Display */}
       {totalDuration > 0 && (
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           {zoom < 100 && (
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide whitespace-nowrap">

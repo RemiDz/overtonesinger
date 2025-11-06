@@ -45,7 +45,7 @@ export function AdvancedSettings({
           <Settings className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-96" align="end" data-testid="popover-advanced-settings">
+      <PopoverContent className="w-[95vw] max-w-md" align="center" data-testid="popover-advanced-settings">
         <div className="space-y-4">
           <div className="space-y-1">
             <h4 className="font-medium text-sm">Advanced Settings</h4>
