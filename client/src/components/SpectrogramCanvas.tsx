@@ -64,11 +64,13 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
   }, [spectrogramData, viewportSettings, currentTime, dimensions, brightness, declutterAmount, mousePos, isPlaying, playbackTime, showFrequencyMarkers, intensityScale, intensityBoost, minFrequency, maxFrequency, colorScheme]);
 
   const drawSpectrogram = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    const padding = { top: 32, right: 32, bottom: 48, left: 64 };
+    const padding = { top: 32, right: 32, bottom: 48, left: 40 };
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
 
-    ctx.fillStyle = 'hsl(var(--background))';
+    const computedStyle = getComputedStyle(document.documentElement);
+    const bgColor = computedStyle.getPropertyValue('--background');
+    ctx.fillStyle = `hsl(${bgColor})`;
     ctx.fillRect(0, 0, width, height);
 
     if (!spectrogramData || spectrogramData.frequencies.length === 0) {
@@ -110,7 +112,9 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     drawGrid(ctx, padding, chartWidth, chartHeight);
     drawAxes(ctx, padding, chartWidth, chartHeight);
 
-    ctx.fillStyle = 'hsl(var(--muted-foreground))';
+    const computedStyle = getComputedStyle(document.documentElement);
+    const mutedFgColor = computedStyle.getPropertyValue('--muted-foreground');
+    ctx.fillStyle = `hsl(${mutedFgColor})`;
     ctx.font = '14px Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -127,7 +131,9 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     chartWidth: number,
     chartHeight: number
   ) => {
-    ctx.strokeStyle = 'hsl(var(--border))';
+    const computedStyle = getComputedStyle(document.documentElement);
+    const borderColor = computedStyle.getPropertyValue('--border');
+    ctx.strokeStyle = `hsl(${borderColor})`;
     ctx.lineWidth = 1;
 
     const numVerticalLines = 10;
@@ -201,7 +207,10 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     chartWidth: number,
     chartHeight: number
   ) => {
-    ctx.strokeStyle = 'hsl(var(--foreground))';
+    const computedStyle = getComputedStyle(document.documentElement);
+    const fgColor = computedStyle.getPropertyValue('--foreground');
+    
+    ctx.strokeStyle = `hsl(${fgColor})`;
     ctx.lineWidth = 2;
 
     ctx.beginPath();
@@ -210,17 +219,8 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     ctx.lineTo(padding.left + chartWidth, padding.top + chartHeight);
     ctx.stroke();
 
-    ctx.fillStyle = 'hsl(var(--foreground))';
+    ctx.fillStyle = `hsl(${fgColor})`;
     ctx.font = '12px Inter, sans-serif';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-
-    const freqLabels = generateFreqSteps();
-    freqLabels.forEach(freq => {
-      const y = freqToY(freq, padding.top, chartHeight);
-      ctx.fillText(`${freq >= 1000 ? freq / 1000 + 'k' : freq} Hz`, padding.left - 8, y);
-    });
-
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     const numTimeLabels = 10;
@@ -259,11 +259,14 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     chartHeight: number
   ) => {
     const freqLabels = generateFreqSteps();
+    const computedStyle = getComputedStyle(document.documentElement);
+    const fgColor = computedStyle.getPropertyValue('--foreground');
+    const borderColor = computedStyle.getPropertyValue('--border');
     
     ctx.font = '11px Inter, sans-serif';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'hsl(var(--foreground))';
+    ctx.fillStyle = `hsl(${fgColor})`;
 
     freqLabels.forEach(freq => {
       const y = freqToY(freq, padding.top, chartHeight);
@@ -273,7 +276,7 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
       
       ctx.fillText(label, labelX, y);
       
-      ctx.strokeStyle = 'hsl(var(--border) / 0.5)';
+      ctx.strokeStyle = `hsl(${borderColor} / 0.5)`;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(padding.left - 4, y);
@@ -450,7 +453,9 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
   ) => {
     if (!mousePos) return;
 
-    ctx.strokeStyle = 'hsl(var(--primary) / 0.5)';
+    const computedStyle = getComputedStyle(document.documentElement);
+    const primaryColor = computedStyle.getPropertyValue('--primary');
+    ctx.strokeStyle = `hsl(${primaryColor} / 0.5)`;
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 4]);
 
@@ -475,6 +480,10 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
   ) => {
     if (!spectrogramData || spectrogramData.frequencies.length === 0) return;
 
+    const computedStyle = getComputedStyle(document.documentElement);
+    const mutedFgColor = computedStyle.getPropertyValue('--muted-foreground');
+    const primaryColor = computedStyle.getPropertyValue('--primary');
+
     const staticMarkers = [
       { freq: 110, label: 'A2' },
       { freq: 220, label: 'A3' },
@@ -497,7 +506,7 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
       const normalizedY = 1 - (logFreq - logMin) / (logMax - logMin);
       const y = padding.top + normalizedY * chartHeight;
 
-      ctx.strokeStyle = 'hsl(var(--muted-foreground) / 0.15)';
+      ctx.strokeStyle = `hsl(${mutedFgColor} / 0.15)`;
       ctx.lineWidth = 1;
       ctx.setLineDash([2, 4]);
 
@@ -506,7 +515,7 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
       ctx.lineTo(padding.left + chartWidth, y);
       ctx.stroke();
 
-      ctx.fillStyle = 'hsl(var(--muted-foreground) / 0.5)';
+      ctx.fillStyle = `hsl(${mutedFgColor} / 0.5)`;
       ctx.font = '9px Inter, sans-serif';
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
@@ -528,7 +537,7 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
         const isFundamental = index === 0;
         const alpha = Math.min(0.7, harmonicStrength * (isFundamental ? 1.5 : 1.2));
 
-        ctx.strokeStyle = `hsl(var(--primary) / ${alpha})`;
+        ctx.strokeStyle = `hsl(${primaryColor} / ${alpha})`;
         ctx.lineWidth = isFundamental ? 2 : 1.5;
         ctx.setLineDash(isFundamental ? [8, 4] : [4, 2]);
 
@@ -538,7 +547,7 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
         ctx.stroke();
 
         if (isFundamental) {
-          ctx.fillStyle = `hsl(var(--primary) / ${Math.min(0.9, alpha + 0.2)})`;
+          ctx.fillStyle = `hsl(${primaryColor} / ${Math.min(0.9, alpha + 0.2)})`;
           ctx.font = 'bold 11px Inter, sans-serif';
           ctx.textAlign = 'left';
           ctx.textBaseline = 'middle';
@@ -664,7 +673,10 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     const normalizedTime = (playbackTime - startTime) / visibleDuration;
     const x = padding.left + normalizedTime * chartWidth;
 
-    ctx.strokeStyle = 'hsl(var(--primary))';
+    const computedStyle = getComputedStyle(document.documentElement);
+    const primaryColor = computedStyle.getPropertyValue('--primary');
+    
+    ctx.strokeStyle = `hsl(${primaryColor})`;
     ctx.lineWidth = 2;
     ctx.setLineDash([]);
     
@@ -673,7 +685,7 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     ctx.lineTo(x, padding.top + chartHeight);
     ctx.stroke();
 
-    ctx.fillStyle = 'hsl(var(--primary))';
+    ctx.fillStyle = `hsl(${primaryColor})`;
     ctx.beginPath();
     ctx.moveTo(x, padding.top);
     ctx.lineTo(x - 5, padding.top - 8);
@@ -683,12 +695,16 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
   };
 
   const drawRecordingIndicator = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    ctx.fillStyle = 'hsl(var(--destructive))';
+    const computedStyle = getComputedStyle(document.documentElement);
+    const destructiveColor = computedStyle.getPropertyValue('--destructive');
+    const fgColor = computedStyle.getPropertyValue('--foreground');
+    
+    ctx.fillStyle = `hsl(${destructiveColor})`;
     ctx.beginPath();
     ctx.arc(width - 24, 24, 6, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = 'hsl(var(--foreground))';
+    ctx.fillStyle = `hsl(${fgColor})`;
     ctx.font = '12px Inter, sans-serif';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
