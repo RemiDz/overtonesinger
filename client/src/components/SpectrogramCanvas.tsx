@@ -281,14 +281,14 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
       
       const boxWidth = textWidth + boxPadding * 2;
 
-      ctx.fillStyle = 'hsl(var(--background) / 0.85)';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
       ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
-      ctx.strokeStyle = 'hsl(var(--border) / 0.5)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
       ctx.lineWidth = 1;
       ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
 
-      ctx.fillStyle = 'hsl(var(--foreground))';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
       const textY = boxY + boxHeight / 2;
       ctx.fillText(label, boxX + boxPadding, textY);
     });
