@@ -153,7 +153,7 @@ export function useAudioAnalyzer(settings: AudioSettings) {
     return duration;
   }, []);
 
-  const playRecording = useCallback(() => {
+  const playRecording = useCallback((onPlaybackUpdate?: (currentTime: number) => void, onPlaybackEnd?: () => void) => {
     if (!audioBuffer || !audioContextRef.current) return;
 
     try {
@@ -169,12 +169,36 @@ export function useAudioAnalyzer(settings: AudioSettings) {
       const source = audioContext.createBufferSource();
       source.buffer = audioBufferData;
       source.connect(audioContext.destination);
+      
+      const playbackStartTime = audioContext.currentTime;
+      const duration = audioBuffer.length / settings.sampleRate;
+      
       source.start(0);
-
       audioSourceNodeRef.current = source;
+
+      let animationId: number;
+      const updatePlaybackPosition = () => {
+        if (!audioSourceNodeRef.current || !audioContextRef.current) return;
+        
+        const elapsed = audioContextRef.current.currentTime - playbackStartTime;
+        if (elapsed < duration && onPlaybackUpdate) {
+          onPlaybackUpdate(elapsed);
+          animationId = requestAnimationFrame(updatePlaybackPosition);
+        }
+      };
+
+      if (onPlaybackUpdate) {
+        animationId = requestAnimationFrame(updatePlaybackPosition);
+      }
 
       source.onended = () => {
         audioSourceNodeRef.current = null;
+        if (animationId) {
+          cancelAnimationFrame(animationId);
+        }
+        if (onPlaybackEnd) {
+          onPlaybackEnd();
+        }
       };
     } catch (err) {
       setError('Failed to play recording');

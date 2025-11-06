@@ -13,6 +13,7 @@ export default function VocalAnalyzer() {
   const spectrogramCanvasRef = useRef<SpectrogramCanvasHandle>(null);
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
   const [currentTime, setCurrentTime] = useState(0);
+  const [playbackTime, setPlaybackTime] = useState(0);
   const [totalDuration, setTotalDuration] = useState(0);
   
   const [audioSettings, setAudioSettings] = useState<AudioSettings>({
@@ -69,7 +70,14 @@ export default function VocalAnalyzer() {
 
   const handlePlay = () => {
     if (recordingState === 'stopped' && audioBuffer) {
-      playRecording();
+      setPlaybackTime(0);
+      playRecording(
+        (time) => setPlaybackTime(time),
+        () => {
+          setRecordingState('stopped');
+          setPlaybackTime(0);
+        }
+      );
       setRecordingState('playing');
     }
   };
@@ -83,6 +91,7 @@ export default function VocalAnalyzer() {
     } else if (recordingState === 'playing') {
       stopPlayback();
       setRecordingState('stopped');
+      setPlaybackTime(0);
     }
   };
 
@@ -228,6 +237,8 @@ export default function VocalAnalyzer() {
           viewportSettings={viewportSettings}
           currentTime={currentTime}
           isRecording={recordingState === 'recording'}
+          isPlaying={recordingState === 'playing'}
+          playbackTime={playbackTime}
           declutterAmount={audioSettings.declutterAmount}
         />
       </div>

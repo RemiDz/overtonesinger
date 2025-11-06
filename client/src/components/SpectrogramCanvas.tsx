@@ -6,6 +6,8 @@ interface SpectrogramCanvasProps {
   viewportSettings: ViewportSettings;
   currentTime: number;
   isRecording: boolean;
+  isPlaying?: boolean;
+  playbackTime?: number;
   declutterAmount: number;
 }
 
@@ -14,7 +16,7 @@ export interface SpectrogramCanvasHandle {
 }
 
 export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, SpectrogramCanvasProps>(
-  ({ spectrogramData, viewportSettings, currentTime, isRecording, declutterAmount }, ref) => {
+  ({ spectrogramData, viewportSettings, currentTime, isRecording, isPlaying = false, playbackTime = 0, declutterAmount }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -52,7 +54,7 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     ctx.scale(dpr, dpr);
 
     drawSpectrogram(ctx, dimensions.width, dimensions.height);
-  }, [spectrogramData, viewportSettings, currentTime, dimensions, declutterAmount, mousePos]);
+  }, [spectrogramData, viewportSettings, currentTime, dimensions, declutterAmount, mousePos, isPlaying, playbackTime]);
 
   const drawSpectrogram = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     const padding = { top: 32, right: 32, bottom: 48, left: 64 };
@@ -70,6 +72,10 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     drawGrid(ctx, padding, chartWidth, chartHeight);
     drawAxes(ctx, padding, chartWidth, chartHeight);
     drawSpectrogramData(ctx, padding, chartWidth, chartHeight);
+    
+    if (isPlaying) {
+      drawPlaybackIndicator(ctx, padding, chartWidth, chartHeight);
+    }
     
     if (mousePos) {
       drawCrosshair(ctx, padding, chartWidth, chartHeight);
@@ -317,6 +323,44 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     ctx.stroke();
 
     ctx.setLineDash([]);
+  };
+
+  const drawPlaybackIndicator = (
+    ctx: CanvasRenderingContext2D,
+    padding: { top: number; right: number; bottom: number; left: number },
+    chartWidth: number,
+    chartHeight: number
+  ) => {
+    if (!spectrogramData) return;
+
+    const totalDuration = spectrogramData.timeStamps[spectrogramData.timeStamps.length - 1] || 1;
+    const zoomPercent = Math.max(1, Math.min(100, viewportSettings.zoom));
+    const visibleDuration = totalDuration * (zoomPercent / 100);
+    const scrollableRange = Math.max(0, totalDuration - visibleDuration);
+    const startTime = viewportSettings.scrollPosition * scrollableRange;
+    const endTime = startTime + visibleDuration;
+
+    if (playbackTime < startTime || playbackTime > endTime) return;
+
+    const normalizedTime = (playbackTime - startTime) / visibleDuration;
+    const x = padding.left + normalizedTime * chartWidth;
+
+    ctx.strokeStyle = 'hsl(var(--primary))';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([]);
+    
+    ctx.beginPath();
+    ctx.moveTo(x, padding.top);
+    ctx.lineTo(x, padding.top + chartHeight);
+    ctx.stroke();
+
+    ctx.fillStyle = 'hsl(var(--primary))';
+    ctx.beginPath();
+    ctx.moveTo(x, padding.top);
+    ctx.lineTo(x - 5, padding.top - 8);
+    ctx.lineTo(x + 5, padding.top - 8);
+    ctx.closePath();
+    ctx.fill();
   };
 
   const drawRecordingIndicator = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
