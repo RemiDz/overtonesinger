@@ -79,6 +79,7 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     drawGrid(ctx, padding, chartWidth, chartHeight);
     drawAxes(ctx, padding, chartWidth, chartHeight);
     drawSpectrogramData(ctx, padding, chartWidth, chartHeight);
+    drawFrequencyScale(ctx, padding, chartWidth, chartHeight);
     
     if (showFrequencyMarkers) {
       drawFrequencyMarkers(ctx, padding, chartWidth, chartHeight);
@@ -175,6 +176,25 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     return yStart + height * (1 - normalized);
   };
 
+  const generateFreqSteps = () => {
+    const steps = [];
+    const range = maxFrequency - minFrequency;
+    if (range <= 1000) {
+      for (let f = Math.ceil(minFrequency / 100) * 100; f <= maxFrequency; f += 100) {
+        steps.push(f);
+      }
+    } else if (range <= 5000) {
+      for (let f = Math.ceil(minFrequency / 500) * 500; f <= maxFrequency; f += 500) {
+        steps.push(f);
+      }
+    } else {
+      for (let f = Math.ceil(minFrequency / 1000) * 1000; f <= maxFrequency; f += 1000) {
+        steps.push(f);
+      }
+    }
+    return steps.slice(0, 8);
+  };
+
   const drawAxes = (
     ctx: CanvasRenderingContext2D,
     padding: { top: number; right: number; bottom: number; left: number },
@@ -194,25 +214,6 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     ctx.font = '12px Inter, sans-serif';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
-
-    const generateFreqSteps = () => {
-      const steps = [];
-      const range = maxFrequency - minFrequency;
-      if (range <= 1000) {
-        for (let f = Math.ceil(minFrequency / 100) * 100; f <= maxFrequency; f += 100) {
-          steps.push(f);
-        }
-      } else if (range <= 5000) {
-        for (let f = Math.ceil(minFrequency / 500) * 500; f <= maxFrequency; f += 500) {
-          steps.push(f);
-        }
-      } else {
-        for (let f = Math.ceil(minFrequency / 1000) * 1000; f <= maxFrequency; f += 1000) {
-          steps.push(f);
-        }
-      }
-      return steps.slice(0, 8);
-    };
 
     const freqLabels = generateFreqSteps();
     freqLabels.forEach(freq => {
@@ -249,6 +250,48 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillText('Time (seconds)', padding.left + chartWidth / 2, totalHeight - 16);
+  };
+
+  const drawFrequencyScale = (
+    ctx: CanvasRenderingContext2D,
+    padding: { top: number; right: number; bottom: number; left: number },
+    chartWidth: number,
+    chartHeight: number
+  ) => {
+    const freqLabels = generateFreqSteps();
+    
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+
+    freqLabels.forEach(freq => {
+      const y = freqToY(freq, padding.top, chartHeight);
+      const label = `${freq >= 1000 ? freq / 1000 + 'k' : freq} Hz`;
+      
+      const metrics = ctx.measureText(label);
+      const textWidth = metrics.width;
+      const textHeight = 14;
+      const boxPadding = 3;
+      
+      const boxX = padding.left + 4;
+      const boxHeight = textHeight;
+      let boxY = y - textHeight / 2;
+      
+      boxY = Math.max(padding.top, Math.min(padding.top + chartHeight - boxHeight, boxY));
+      
+      const boxWidth = textWidth + boxPadding * 2;
+
+      ctx.fillStyle = 'hsl(var(--background) / 0.85)';
+      ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+
+      ctx.strokeStyle = 'hsl(var(--border) / 0.5)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+
+      ctx.fillStyle = 'hsl(var(--foreground))';
+      const textY = boxY + boxHeight / 2;
+      ctx.fillText(label, boxX + boxPadding, textY);
+    });
   };
 
   const drawSpectrogramData = (

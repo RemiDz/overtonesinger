@@ -18,6 +18,7 @@ Perfect for vocal exercises, overtone singing analysis, and understanding harmon
 - Live FFT processing with 2048-sample window
 - 60fps spectrogram rendering using Canvas API
 - Logarithmic frequency scale for clear octave visualization
+- Frequency scale displayed on left side inside spectrogram for easy frequency reference
 
 ### Transport Controls
 - **Record**: Start capturing microphone input
@@ -142,7 +143,11 @@ This is a professional audio analysis tool with a clean, function-first design:
 
 ## Recent Changes
 
-- 2025-11-06: Added brightness slider with icon-based controls (Sun/Volume/Focus icons replacing text labels)
+- 2025-11-06: Added frequency scale on left side inside spectrogram for easy frequency reference
+- 2025-11-06: Made sliders dynamically resize to fit screen width (no horizontal scrolling or clipping)
+- 2025-11-06: Reordered sliders to: Gain, Brightness, Sharpness (left to right)
+- 2025-11-06: Changed sharpness icon to Contrast (half-circle standard sharpness symbol)
+- 2025-11-06: Added brightness slider with icon-based controls (Volume/Sun/Contrast icons replacing text labels)
 - 2025-11-06: Reorganized layout for mobile - all controls now stack vertically above/below spectrogram (no horizontal scrolling)
 - 2025-11-06: Fixed zoom controls overlap - split into two rows to prevent timer text from covering sliders
 - 2025-11-06: Added comprehensive settings panel with FFT size, frequency range, color schemes, and intensity controls
