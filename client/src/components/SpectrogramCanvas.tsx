@@ -332,27 +332,18 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
   const applyDeclutter = (magnitudes: number[], threshold: number): number[] => {
     if (threshold === 0) return magnitudes;
 
-    const result = new Float32Array(magnitudes.length);
-    const windowSize = 3;
-
-    for (let i = 0; i < magnitudes.length; i++) {
-      let localMax = magnitudes[i];
-      
-      for (let j = Math.max(0, i - windowSize); j <= Math.min(magnitudes.length - 1, i + windowSize); j++) {
-        localMax = Math.max(localMax, magnitudes[j]);
+    const maxMagnitude = Math.max(...magnitudes);
+    
+    const noiseGateThreshold = maxMagnitude * (threshold / 100);
+    
+    const result = magnitudes.map(mag => {
+      if (mag < noiseGateThreshold) {
+        return 0;
       }
+      return mag;
+    });
 
-      const isPeak = magnitudes[i] >= localMax * 0.9;
-      
-      if (isPeak) {
-        result[i] = magnitudes[i];
-      } else {
-        const suppression = threshold * 0.8;
-        result[i] = Math.max(0, magnitudes[i] - suppression);
-      }
-    }
-
-    return Array.from(result);
+    return result;
   };
 
   const applyIntensityScaling = (magnitude: number): number => {
