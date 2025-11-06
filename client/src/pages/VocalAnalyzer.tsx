@@ -7,7 +7,7 @@ import { AdvancedSettings } from '@/components/AdvancedSettings';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useToast } from '@/hooks/use-toast';
 import { exportToWAV, downloadBlob, exportCanvasToPNG } from '@/lib/audioExport';
-import { Volume2, Sun, Focus } from 'lucide-react';
+import { Volume2, Sun, Contrast } from 'lucide-react';
 import type { RecordingState, AudioSettings, ViewportSettings, IntensityScaleMode, ColorScheme, FFTSize } from '@shared/schema';
 
 export default function VocalAnalyzer() {
@@ -238,47 +238,49 @@ export default function VocalAnalyzer() {
 
       {/* Settings Controls Row */}
       <div className="flex-none border-b border-border bg-card">
-        <div className="flex flex-wrap items-center justify-center px-4 py-2 gap-4">
-          <SliderControl
-            icon={Sun}
-            value={audioSettings.brightness}
-            onChange={handleBrightnessChange}
-            min={0}
-            max={200}
-            className="w-32"
-            data-testid="slider-brightness"
-          />
+        <div className="flex items-center justify-center px-4 py-2 gap-4 overflow-x-auto">
           <SliderControl
             icon={Volume2}
             value={audioSettings.microphoneGain}
             onChange={handleGainChange}
             min={0}
             max={200}
-            className="w-32"
+            className="w-32 flex-shrink-0"
             data-testid="slider-gain"
           />
           <SliderControl
-            icon={Focus}
+            icon={Sun}
+            value={audioSettings.brightness}
+            onChange={handleBrightnessChange}
+            min={0}
+            max={200}
+            className="w-32 flex-shrink-0"
+            data-testid="slider-brightness"
+          />
+          <SliderControl
+            icon={Contrast}
             value={audioSettings.declutterAmount}
             onChange={handleDeclutterChange}
             min={0}
             max={100}
-            className="w-32"
+            className="w-32 flex-shrink-0"
             data-testid="slider-declutter"
           />
-          <AdvancedSettings
-            intensityScale={audioSettings.intensityScale}
-            intensityBoost={audioSettings.intensityBoost}
-            minFrequency={audioSettings.minFrequency}
-            maxFrequency={audioSettings.maxFrequency}
-            fftSize={audioSettings.fftSize}
-            colorScheme={audioSettings.colorScheme}
-            onIntensityScaleChange={handleIntensityScaleChange}
-            onIntensityBoostChange={handleIntensityBoostChange}
-            onFrequencyRangeChange={handleFrequencyRangeChange}
-            onFFTSizeChange={handleFFTSizeChange}
-            onColorSchemeChange={handleColorSchemeChange}
-          />
+          <div className="flex-shrink-0">
+            <AdvancedSettings
+              intensityScale={audioSettings.intensityScale}
+              intensityBoost={audioSettings.intensityBoost}
+              minFrequency={audioSettings.minFrequency}
+              maxFrequency={audioSettings.maxFrequency}
+              fftSize={audioSettings.fftSize}
+              colorScheme={audioSettings.colorScheme}
+              onIntensityScaleChange={handleIntensityScaleChange}
+              onIntensityBoostChange={handleIntensityBoostChange}
+              onFrequencyRangeChange={handleFrequencyRangeChange}
+              onFFTSizeChange={handleFFTSizeChange}
+              onColorSchemeChange={handleColorSchemeChange}
+            />
+          </div>
         </div>
       </div>
 
