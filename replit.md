@@ -18,7 +18,7 @@ Perfect for vocal exercises, overtone singing analysis, and understanding harmon
 - Live FFT processing with 2048-sample window
 - 60fps spectrogram rendering using Canvas API
 - Logarithmic frequency scale for clear octave visualization
-- Frequency scale displayed on left side inside spectrogram for easy frequency reference
+- Frequency scale displayed on left margin (Y-axis) with tick marks for easy frequency reference
 
 ### Transport Controls
 - **Record**: Start capturing microphone input
@@ -143,7 +143,8 @@ This is a professional audio analysis tool with a clean, function-first design:
 
 ## Recent Changes
 
-- 2025-11-06: Added frequency scale on left side inside spectrogram for easy frequency reference
+- 2025-11-06: Moved frequency scale to left margin (outside spectrogram) for maximum visualization space
+- 2025-11-06: Added Y-axis frequency scale with tick marks for easy frequency reference
 - 2025-11-06: Made sliders dynamically resize to fit screen width (no horizontal scrolling or clipping)
 - 2025-11-06: Reordered sliders to: Gain, Brightness, Sharpness (left to right)
 - 2025-11-06: Changed sharpness icon to Contrast (half-circle standard sharpness symbol)

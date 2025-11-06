@@ -261,36 +261,24 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     const freqLabels = generateFreqSteps();
     
     ctx.font = '11px Inter, sans-serif';
-    ctx.textAlign = 'left';
+    ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'hsl(var(--foreground))';
 
     freqLabels.forEach(freq => {
       const y = freqToY(freq, padding.top, chartHeight);
-      const label = `${freq >= 1000 ? freq / 1000 + 'k' : freq} Hz`;
+      const label = `${freq >= 1000 ? freq / 1000 + 'k' : freq}`;
       
-      const metrics = ctx.measureText(label);
-      const textWidth = metrics.width;
-      const textHeight = 14;
-      const boxPadding = 3;
+      const labelX = padding.left - 8;
       
-      const boxX = padding.left + 4;
-      const boxHeight = textHeight;
-      let boxY = y - textHeight / 2;
+      ctx.fillText(label, labelX, y);
       
-      boxY = Math.max(padding.top, Math.min(padding.top + chartHeight - boxHeight, boxY));
-      
-      const boxWidth = textWidth + boxPadding * 2;
-
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-      ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
-
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.strokeStyle = 'hsl(var(--border) / 0.5)';
       ctx.lineWidth = 1;
-      ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
-
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-      const textY = boxY + boxHeight / 2;
-      ctx.fillText(label, boxX + boxPadding, textY);
+      ctx.beginPath();
+      ctx.moveTo(padding.left - 4, y);
+      ctx.lineTo(padding.left, y);
+      ctx.stroke();
     });
   };
 
