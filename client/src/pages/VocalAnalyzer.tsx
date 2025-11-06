@@ -19,15 +19,15 @@ export default function VocalAnalyzer() {
   const [totalDuration, setTotalDuration] = useState(0);
   
   const [audioSettings, setAudioSettings] = useState<AudioSettings>({
-    microphoneGain: 100,
-    brightness: 100,
+    microphoneGain: 154,
+    brightness: 137,
     declutterAmount: 0,
     sampleRate: 48000,
-    fftSize: 2048,
-    intensityScale: 'logarithmic',
+    fftSize: 4096,
+    intensityScale: 'linear',
     intensityBoost: 100,
     minFrequency: 50,
-    maxFrequency: 5000,
+    maxFrequency: 4000,
     colorScheme: 'default',
   });
 
