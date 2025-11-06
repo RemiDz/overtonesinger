@@ -24,7 +24,7 @@ export default function VocalAnalyzer() {
     declutterAmount: 0,
     sampleRate: 48000,
     fftSize: 4096,
-    intensityScale: 'linear',
+    intensityScale: 'power',
     intensityBoost: 100,
     minFrequency: 50,
     maxFrequency: 4000,
@@ -101,6 +101,18 @@ export default function VocalAnalyzer() {
       setRecordingState('stopped');
       setPlaybackTime(0);
     }
+  };
+
+  const handleReset = () => {
+    setRecordingState('idle');
+    setCurrentTime(0);
+    setPlaybackTime(0);
+    setTotalDuration(0);
+    setViewportSettings({
+      zoom: 100,
+      scrollPosition: 0,
+      visibleDuration: 10,
+    });
   };
 
   const handleGainChange = (value: number) => {
@@ -225,6 +237,7 @@ export default function VocalAnalyzer() {
             onRecord={handleRecord}
             onPlay={handlePlay}
             onStop={handleStop}
+            onReset={handleReset}
             onExportWAV={handleExportWAV}
             onExportPNG={handleExportPNG}
             hasRecording={!!audioBuffer}
