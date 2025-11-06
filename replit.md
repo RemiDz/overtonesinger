@@ -25,10 +25,10 @@ Perfect for vocal exercises, overtone singing analysis, and understanding harmon
 - **Stop**: Stop recording or playback
 
 ### Control Adjustments
-All controls use intuitive icons (like old TV controls) instead of text labels, arranged in a single horizontal line:
+All controls use intuitive icons (like old TV controls) instead of text labels, arranged in a single horizontal line that dynamically adjusts to screen width:
 - **Gain** (Volume icon): 0-200% microphone gain control for input sensitivity
 - **Brightness** (Sun icon): 0-200% overall brightness control for the spectrogram
-- **Sharpness** (Half-circle icon): 0-100 peak decluttering to clean up frequencies near overtones
+- **Sharpness** (Contrast icon): 0-100 peak decluttering to clean up frequencies near overtones
 - **Advanced Settings**: Collapsible panel with:
   - FFT Window Size: 1024/2048/4096 samples for frequency resolution
   - Frequency Range: Adjustable min (20-1000 Hz) and max (1000-10000 Hz)

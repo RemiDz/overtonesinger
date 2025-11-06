@@ -238,14 +238,14 @@ export default function VocalAnalyzer() {
 
       {/* Settings Controls Row */}
       <div className="flex-none border-b border-border bg-card">
-        <div className="flex items-center justify-center px-4 py-2 gap-4 overflow-x-auto">
+        <div className="flex items-center justify-center px-2 sm:px-4 py-2 gap-2 sm:gap-4">
           <SliderControl
             icon={Volume2}
             value={audioSettings.microphoneGain}
             onChange={handleGainChange}
             min={0}
             max={200}
-            className="w-32 flex-shrink-0"
+            className="flex-1 min-w-0 max-w-32"
             data-testid="slider-gain"
           />
           <SliderControl
@@ -254,7 +254,7 @@ export default function VocalAnalyzer() {
             onChange={handleBrightnessChange}
             min={0}
             max={200}
-            className="w-32 flex-shrink-0"
+            className="flex-1 min-w-0 max-w-32"
             data-testid="slider-brightness"
           />
           <SliderControl
@@ -263,7 +263,7 @@ export default function VocalAnalyzer() {
             onChange={handleDeclutterChange}
             min={0}
             max={100}
-            className="w-32 flex-shrink-0"
+            className="flex-1 min-w-0 max-w-32"
             data-testid="slider-declutter"
           />
           <div className="flex-shrink-0">
