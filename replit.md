@@ -143,6 +143,10 @@ This is a professional audio analysis tool with a clean, function-first design:
 
 ## Recent Changes
 
+- 2025-11-06: Changed spectrogram background to always use black for better sound detail visibility
+- 2025-11-06: Updated grid lines and axes to use light colors (white/rgba) for visibility on black background
+- 2025-11-06: Reduced left padding from 64px to 40px to minimize wasted space
+- 2025-11-06: Fixed canvas color rendering to use getComputedStyle() for proper theme color support
 - 2025-11-06: Moved frequency scale to left margin (outside spectrogram) for maximum visualization space
 - 2025-11-06: Added Y-axis frequency scale with tick marks for easy frequency reference
 - 2025-11-06: Made sliders dynamically resize to fit screen width (no horizontal scrolling or clipping)
