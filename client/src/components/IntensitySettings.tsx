@@ -71,7 +71,12 @@ export function IntensitySettings({
               <Slider
                 id="intensity-boost"
                 value={[intensityBoost]}
-                onValueChange={([value]) => onIntensityBoostChange(value)}
+                onValueChange={(values) => {
+                  const newValue = values[0];
+                  if (newValue !== undefined) {
+                    onIntensityBoostChange(newValue);
+                  }
+                }}
                 min={25}
                 max={200}
                 step={5}
