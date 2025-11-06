@@ -1,6 +1,7 @@
-import { Settings } from 'lucide-react';
+import { useState } from 'react';
+import { Settings, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
@@ -34,9 +35,11 @@ export function AdvancedSettings({
   onFFTSizeChange,
   onColorSchemeChange,
 }: AdvancedSettingsProps) {
+  const [open, setOpen] = useState(false);
+
   return (
-    <Popover>
-      <PopoverTrigger asChild>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
         <Button
           variant="outline"
           size="icon"
@@ -44,158 +47,172 @@ export function AdvancedSettings({
         >
           <Settings className="h-4 w-4" />
         </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[95vw] max-w-md" align="center" data-testid="popover-advanced-settings">
-        <div className="space-y-4">
-          <div className="space-y-1">
-            <h4 className="font-medium text-sm">Advanced Settings</h4>
-            <p className="text-xs text-muted-foreground">
-              Customize visualization parameters
-            </p>
-          </div>
-
-          <Separator />
-
-          <div className="space-y-3">
-            <h5 className="text-xs font-medium">Analysis</h5>
-            
-            <div className="space-y-2">
-              <Label htmlFor="fft-size" className="text-xs">
-                FFT Window Size
-              </Label>
-              <Select
-                value={fftSize.toString()}
-                onValueChange={(value) => onFFTSizeChange(parseInt(value) as FFTSize)}
+      </DialogTrigger>
+      <DialogContent className="w-screen h-screen max-w-none m-0 p-0 rounded-none" data-testid="dialog-advanced-settings">
+        <div className="h-full flex flex-col">
+          <DialogHeader className="flex-none px-4 py-3 border-b">
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle>Advanced Settings</DialogTitle>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Customize visualization parameters
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setOpen(false)}
+                data-testid="button-close-settings"
               >
-                <SelectTrigger id="fft-size" data-testid="select-fft-size">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1024">1024 (faster, less detail)</SelectItem>
-                  <SelectItem value="2048">2048 (balanced)</SelectItem>
-                  <SelectItem value="4096">4096 (slower, more detail)</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Higher values provide better frequency resolution
-              </p>
+                <X className="h-5 w-5" />
+              </Button>
             </div>
+          </DialogHeader>
 
-            <div className="space-y-2">
-              <Label htmlFor="min-freq" className="text-xs">
-                Min Frequency: {minFrequency} Hz
-              </Label>
-              <Slider
-                id="min-freq"
-                value={[minFrequency]}
-                onValueChange={(values) => {
-                  const newValue = values[0];
-                  if (newValue !== undefined && newValue < maxFrequency) {
-                    onFrequencyRangeChange(newValue, maxFrequency);
-                  }
-                }}
-                min={20}
-                max={1000}
-                step={10}
-                className="w-full"
-                data-testid="slider-min-frequency"
-              />
-            </div>
+          <div className="flex-1 overflow-y-auto px-4 py-4">
+            <div className="space-y-4 max-w-2xl mx-auto">
+              <div className="space-y-3">
+                <h5 className="text-sm font-medium">Analysis</h5>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="fft-size" className="text-sm">
+                    FFT Window Size
+                  </Label>
+                  <Select
+                    value={fftSize.toString()}
+                    onValueChange={(value) => onFFTSizeChange(parseInt(value) as FFTSize)}
+                  >
+                    <SelectTrigger id="fft-size" data-testid="select-fft-size">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1024">1024 (faster, less detail)</SelectItem>
+                      <SelectItem value="2048">2048 (balanced)</SelectItem>
+                      <SelectItem value="4096">4096 (slower, more detail)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Higher values provide better frequency resolution
+                  </p>
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="max-freq" className="text-xs">
-                Max Frequency: {maxFrequency} Hz
-              </Label>
-              <Slider
-                id="max-freq"
-                value={[maxFrequency]}
-                onValueChange={(values) => {
-                  const newValue = values[0];
-                  if (newValue !== undefined && newValue > minFrequency) {
-                    onFrequencyRangeChange(minFrequency, newValue);
-                  }
-                }}
-                min={1000}
-                max={10000}
-                step={100}
-                className="w-full"
-                data-testid="slider-max-frequency"
-              />
-            </div>
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="min-freq" className="text-sm">
+                    Min Frequency: {minFrequency} Hz
+                  </Label>
+                  <Slider
+                    id="min-freq"
+                    value={[minFrequency]}
+                    onValueChange={(values) => {
+                      const newValue = values[0];
+                      if (newValue !== undefined && newValue < maxFrequency) {
+                        onFrequencyRangeChange(newValue, maxFrequency);
+                      }
+                    }}
+                    min={20}
+                    max={1000}
+                    step={10}
+                    className="w-full"
+                    data-testid="slider-min-frequency"
+                  />
+                </div>
 
-          <Separator />
+                <div className="space-y-2">
+                  <Label htmlFor="max-freq" className="text-sm">
+                    Max Frequency: {maxFrequency} Hz
+                  </Label>
+                  <Slider
+                    id="max-freq"
+                    value={[maxFrequency]}
+                    onValueChange={(values) => {
+                      const newValue = values[0];
+                      if (newValue !== undefined && newValue > minFrequency) {
+                        onFrequencyRangeChange(minFrequency, newValue);
+                      }
+                    }}
+                    min={1000}
+                    max={10000}
+                    step={100}
+                    className="w-full"
+                    data-testid="slider-max-frequency"
+                  />
+                </div>
+              </div>
 
-          <div className="space-y-3">
-            <h5 className="text-xs font-medium">Color & Intensity</h5>
+              <Separator />
 
-            <div className="space-y-2">
-              <Label htmlFor="color-scheme" className="text-xs">
-                Color Scheme
-              </Label>
-              <Select
-                value={colorScheme}
-                onValueChange={(value) => onColorSchemeChange(value as ColorScheme)}
-              >
-                <SelectTrigger id="color-scheme" data-testid="select-color-scheme">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="default">Default (blue-cyan-yellow-red)</SelectItem>
-                  <SelectItem value="warm">Warm (orange-red-yellow)</SelectItem>
-                  <SelectItem value="cool">Cool (blue-green-cyan)</SelectItem>
-                  <SelectItem value="monochrome">Monochrome (grayscale)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="intensity-scale" className="text-xs">
-                Intensity Scaling
-              </Label>
-              <Select
-                value={intensityScale}
-                onValueChange={(value) => onIntensityScaleChange(value as IntensityScaleMode)}
-              >
-                <SelectTrigger id="intensity-scale" data-testid="select-intensity-scale">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="linear">Linear</SelectItem>
-                  <SelectItem value="logarithmic">Logarithmic</SelectItem>
-                  <SelectItem value="power">Power (√x)</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                {intensityScale === 'linear' && 'Direct 1:1 mapping'}
-                {intensityScale === 'logarithmic' && 'Emphasizes weak signals'}
-                {intensityScale === 'power' && 'Balanced visibility'}
-              </p>
-            </div>
+              <div className="space-y-3">
+                <h5 className="text-sm font-medium">Color & Intensity</h5>
 
-            <div className="space-y-2">
-              <Label htmlFor="intensity-boost" className="text-xs">
-                Brightness: {intensityBoost}%
-              </Label>
-              <Slider
-                id="intensity-boost"
-                value={[intensityBoost]}
-                onValueChange={(values) => {
-                  const newValue = values[0];
-                  if (newValue !== undefined) {
-                    onIntensityBoostChange(newValue);
-                  }
-                }}
-                min={25}
-                max={200}
-                step={5}
-                className="w-full"
-                data-testid="slider-intensity-boost"
-              />
+                <div className="space-y-2">
+                  <Label htmlFor="color-scheme" className="text-sm">
+                    Color Scheme
+                  </Label>
+                  <Select
+                    value={colorScheme}
+                    onValueChange={(value) => onColorSchemeChange(value as ColorScheme)}
+                  >
+                    <SelectTrigger id="color-scheme" data-testid="select-color-scheme">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="default">Default (blue-cyan-yellow-red)</SelectItem>
+                      <SelectItem value="warm">Warm (orange-red-yellow)</SelectItem>
+                      <SelectItem value="cool">Cool (blue-green-cyan)</SelectItem>
+                      <SelectItem value="monochrome">Monochrome (grayscale)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="intensity-scale" className="text-sm">
+                    Intensity Scaling
+                  </Label>
+                  <Select
+                    value={intensityScale}
+                    onValueChange={(value) => onIntensityScaleChange(value as IntensityScaleMode)}
+                  >
+                    <SelectTrigger id="intensity-scale" data-testid="select-intensity-scale">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="linear">Linear</SelectItem>
+                      <SelectItem value="logarithmic">Logarithmic</SelectItem>
+                      <SelectItem value="power">Power (√x)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {intensityScale === 'linear' && 'Direct 1:1 mapping'}
+                    {intensityScale === 'logarithmic' && 'Emphasizes weak signals'}
+                    {intensityScale === 'power' && 'Balanced visibility'}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="intensity-boost" className="text-sm">
+                    Brightness: {intensityBoost}%
+                  </Label>
+                  <Slider
+                    id="intensity-boost"
+                    value={[intensityBoost]}
+                    onValueChange={(values) => {
+                      const newValue = values[0];
+                      if (newValue !== undefined) {
+                        onIntensityBoostChange(newValue);
+                      }
+                    }}
+                    min={25}
+                    max={200}
+                    step={5}
+                    className="w-full"
+                    data-testid="slider-intensity-boost"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </PopoverContent>
-    </Popover>
+      </DialogContent>
+    </Dialog>
   );
 }
