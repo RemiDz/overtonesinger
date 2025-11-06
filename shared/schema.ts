@@ -16,11 +16,15 @@ export interface SpectrogramData {
   fftSize: number;          // FFT window size
 }
 
+export type IntensityScaleMode = 'linear' | 'logarithmic' | 'power';
+
 export interface AudioSettings {
   microphoneGain: number;   // 0-100%
   declutterAmount: number;  // 0-100
   sampleRate: number;       // 48000 Hz
   fftSize: number;          // FFT window size (e.g., 2048)
+  intensityScale: IntensityScaleMode; // Color intensity scaling
+  intensityBoost: number;   // 0-200%, brightness multiplier
 }
 
 export type RecordingState = 'idle' | 'recording' | 'playing' | 'stopped';

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
-import type { SpectrogramData, ViewportSettings } from '@shared/schema';
+import type { SpectrogramData, ViewportSettings, IntensityScaleMode } from '@shared/schema';
 
 interface SpectrogramCanvasProps {
   spectrogramData: SpectrogramData | null;
@@ -10,6 +10,8 @@ interface SpectrogramCanvasProps {
   playbackTime?: number;
   declutterAmount: number;
   showFrequencyMarkers?: boolean;
+  intensityScale?: IntensityScaleMode;
+  intensityBoost?: number;
 }
 
 export interface SpectrogramCanvasHandle {
@@ -17,7 +19,7 @@ export interface SpectrogramCanvasHandle {
 }
 
 export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, SpectrogramCanvasProps>(
-  ({ spectrogramData, viewportSettings, currentTime, isRecording, isPlaying = false, playbackTime = 0, declutterAmount, showFrequencyMarkers = true }, ref) => {
+  ({ spectrogramData, viewportSettings, currentTime, isRecording, isPlaying = false, playbackTime = 0, declutterAmount, showFrequencyMarkers = true, intensityScale = 'logarithmic', intensityBoost = 100 }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -55,7 +57,7 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     ctx.scale(dpr, dpr);
 
     drawSpectrogram(ctx, dimensions.width, dimensions.height);
-  }, [spectrogramData, viewportSettings, currentTime, dimensions, declutterAmount, mousePos, isPlaying, playbackTime, showFrequencyMarkers]);
+  }, [spectrogramData, viewportSettings, currentTime, dimensions, declutterAmount, mousePos, isPlaying, playbackTime, showFrequencyMarkers, intensityScale, intensityBoost]);
 
   const drawSpectrogram = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     const padding = { top: 32, right: 32, bottom: 48, left: 64 };
@@ -287,8 +289,31 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     return Array.from(result);
   };
 
+  const applyIntensityScaling = (magnitude: number): number => {
+    const boost = intensityBoost / 100;
+    let scaled = magnitude * boost;
+
+    switch (intensityScale) {
+      case 'linear':
+        return Math.max(0, Math.min(1, scaled));
+      
+      case 'logarithmic':
+        if (scaled <= 0) return 0;
+        const logScaled = Math.log10(1 + scaled * 9) / Math.log10(10);
+        return Math.max(0, Math.min(1, logScaled));
+      
+      case 'power':
+        const powered = Math.pow(scaled, 0.5);
+        return Math.max(0, Math.min(1, powered));
+      
+      default:
+        return Math.max(0, Math.min(1, scaled));
+    }
+  };
+
   const magnitudeToColor = (magnitude: number): string => {
-    const clamped = Math.max(0, Math.min(1, magnitude));
+    const scaled = applyIntensityScaling(magnitude);
+    const clamped = Math.max(0, Math.min(1, scaled));
     
     if (clamped < 0.2) {
       const t = clamped / 0.2;

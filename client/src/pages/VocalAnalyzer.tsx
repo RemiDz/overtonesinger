@@ -3,10 +3,11 @@ import { SpectrogramCanvas, type SpectrogramCanvasHandle } from '@/components/Sp
 import { TransportControls } from '@/components/TransportControls';
 import { SliderControl } from '@/components/SliderControl';
 import { ZoomControls } from '@/components/ZoomControls';
+import { IntensitySettings } from '@/components/IntensitySettings';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useToast } from '@/hooks/use-toast';
 import { exportToWAV, downloadBlob, exportCanvasToPNG } from '@/lib/audioExport';
-import type { RecordingState, AudioSettings, ViewportSettings } from '@shared/schema';
+import type { RecordingState, AudioSettings, ViewportSettings, IntensityScaleMode } from '@shared/schema';
 
 export default function VocalAnalyzer() {
   const { toast } = useToast();
@@ -21,6 +22,8 @@ export default function VocalAnalyzer() {
     declutterAmount: 0,
     sampleRate: 48000,
     fftSize: 2048,
+    intensityScale: 'logarithmic',
+    intensityBoost: 100,
   });
 
   const [viewportSettings, setViewportSettings] = useState<ViewportSettings>({
@@ -101,6 +104,14 @@ export default function VocalAnalyzer() {
 
   const handleDeclutterChange = (value: number) => {
     setAudioSettings(prev => ({ ...prev, declutterAmount: value }));
+  };
+
+  const handleIntensityScaleChange = (value: IntensityScaleMode) => {
+    setAudioSettings(prev => ({ ...prev, intensityScale: value }));
+  };
+
+  const handleIntensityBoostChange = (value: number) => {
+    setAudioSettings(prev => ({ ...prev, intensityBoost: value }));
   };
 
   const handleZoomChange = (value: number) => {
@@ -205,7 +216,7 @@ export default function VocalAnalyzer() {
             </div>
           </div>
 
-          {/* Right: Sliders */}
+          {/* Right: Sliders and Settings */}
           <div className="flex items-center gap-6">
             <SliderControl
               label="Gain"
@@ -225,6 +236,12 @@ export default function VocalAnalyzer() {
               className="w-40"
               data-testid="slider-declutter"
             />
+            <IntensitySettings
+              intensityScale={audioSettings.intensityScale}
+              intensityBoost={audioSettings.intensityBoost}
+              onIntensityScaleChange={handleIntensityScaleChange}
+              onIntensityBoostChange={handleIntensityBoostChange}
+            />
           </div>
         </div>
       </div>
@@ -240,6 +257,8 @@ export default function VocalAnalyzer() {
           isPlaying={recordingState === 'playing'}
           playbackTime={playbackTime}
           declutterAmount={audioSettings.declutterAmount}
+          intensityScale={audioSettings.intensityScale}
+          intensityBoost={audioSettings.intensityBoost}
         />
       </div>
 
