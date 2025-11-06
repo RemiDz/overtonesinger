@@ -7,6 +7,7 @@ import { AdvancedSettings } from '@/components/AdvancedSettings';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useToast } from '@/hooks/use-toast';
 import { exportToWAV, downloadBlob, exportCanvasToPNG } from '@/lib/audioExport';
+import { Volume2, Sun, Focus } from 'lucide-react';
 import type { RecordingState, AudioSettings, ViewportSettings, IntensityScaleMode, ColorScheme, FFTSize } from '@shared/schema';
 
 export default function VocalAnalyzer() {
@@ -19,6 +20,7 @@ export default function VocalAnalyzer() {
   
   const [audioSettings, setAudioSettings] = useState<AudioSettings>({
     microphoneGain: 100,
+    brightness: 100,
     declutterAmount: 0,
     sampleRate: 48000,
     fftSize: 2048,
@@ -103,6 +105,10 @@ export default function VocalAnalyzer() {
 
   const handleGainChange = (value: number) => {
     setAudioSettings(prev => ({ ...prev, microphoneGain: value }));
+  };
+
+  const handleBrightnessChange = (value: number) => {
+    setAudioSettings(prev => ({ ...prev, brightness: value }));
   };
 
   const handleDeclutterChange = (value: number) => {
@@ -234,7 +240,16 @@ export default function VocalAnalyzer() {
       <div className="flex-none border-b border-border bg-card">
         <div className="flex flex-wrap items-center justify-center px-4 py-2 gap-4">
           <SliderControl
-            label="Gain"
+            icon={Sun}
+            value={audioSettings.brightness}
+            onChange={handleBrightnessChange}
+            min={0}
+            max={200}
+            className="w-32"
+            data-testid="slider-brightness"
+          />
+          <SliderControl
+            icon={Volume2}
             value={audioSettings.microphoneGain}
             onChange={handleGainChange}
             min={0}
@@ -243,12 +258,12 @@ export default function VocalAnalyzer() {
             data-testid="slider-gain"
           />
           <SliderControl
-            label="Declutter"
+            icon={Focus}
             value={audioSettings.declutterAmount}
             onChange={handleDeclutterChange}
             min={0}
             max={100}
-            className="w-40"
+            className="w-32"
             data-testid="slider-declutter"
           />
           <AdvancedSettings
@@ -277,6 +292,7 @@ export default function VocalAnalyzer() {
           isRecording={recordingState === 'recording'}
           isPlaying={recordingState === 'playing'}
           playbackTime={playbackTime}
+          brightness={audioSettings.brightness}
           declutterAmount={audioSettings.declutterAmount}
           intensityScale={audioSettings.intensityScale}
           intensityBoost={audioSettings.intensityBoost}

@@ -25,8 +25,10 @@ Perfect for vocal exercises, overtone singing analysis, and understanding harmon
 - **Stop**: Stop recording or playback
 
 ### Control Adjustments
-- **Microphone Gain**: 0-200% gain control for input sensitivity
-- **Declutter**: 0-100 peak decluttering to clean up frequencies near overtones
+All controls use intuitive icons (like old TV controls) instead of text labels:
+- **Brightness** (Sun icon): 0-200% overall brightness control for the spectrogram
+- **Gain** (Volume icon): 0-200% microphone gain control for input sensitivity
+- **Declutter** (Focus/Sharpness icon): 0-100 peak decluttering to clean up frequencies near overtones
 - **Advanced Settings**: Collapsible panel with:
   - FFT Window Size: 1024/2048/4096 samples for frequency resolution
   - Frequency Range: Adjustable min (20-1000 Hz) and max (1000-10000 Hz)
@@ -140,6 +142,7 @@ This is a professional audio analysis tool with a clean, function-first design:
 
 ## Recent Changes
 
+- 2025-11-06: Added brightness slider with icon-based controls (Sun/Volume/Focus icons replacing text labels)
 - 2025-11-06: Reorganized layout for mobile - all controls now stack vertically above/below spectrogram (no horizontal scrolling)
 - 2025-11-06: Fixed zoom controls overlap - split into two rows to prevent timer text from covering sliders
 - 2025-11-06: Added comprehensive settings panel with FFT size, frequency range, color schemes, and intensity controls

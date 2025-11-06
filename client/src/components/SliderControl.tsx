@@ -1,7 +1,8 @@
 import { Slider } from '@/components/ui/slider';
+import type { LucideIcon } from 'lucide-react';
 
 interface SliderControlProps {
-  label: string;
+  icon: LucideIcon;
   value: number;
   onChange: (value: number) => void;
   min: number;
@@ -11,7 +12,7 @@ interface SliderControlProps {
 }
 
 export function SliderControl({
-  label,
+  icon: Icon,
   value,
   onChange,
   min,
@@ -22,9 +23,7 @@ export function SliderControl({
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
       <div className="flex items-center justify-between gap-2">
-        <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          {label}
-        </label>
+        <Icon className="h-4 w-4 text-muted-foreground" />
         <span className="text-sm font-mono text-foreground">
           {Math.round(value)}
         </span>

@@ -21,7 +21,8 @@ export type ColorScheme = 'default' | 'warm' | 'cool' | 'monochrome';
 export type FFTSize = 1024 | 2048 | 4096;
 
 export interface AudioSettings {
-  microphoneGain: number;   // 0-100%
+  microphoneGain: number;   // 0-200%
+  brightness: number;       // 0-200%, overall brightness
   declutterAmount: number;  // 0-100
   sampleRate: number;       // 48000 Hz
   fftSize: FFTSize;         // FFT window size

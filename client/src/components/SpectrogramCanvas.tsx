@@ -8,6 +8,7 @@ interface SpectrogramCanvasProps {
   isRecording: boolean;
   isPlaying?: boolean;
   playbackTime?: number;
+  brightness?: number;
   declutterAmount: number;
   showFrequencyMarkers?: boolean;
   intensityScale?: IntensityScaleMode;
@@ -22,7 +23,7 @@ export interface SpectrogramCanvasHandle {
 }
 
 export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, SpectrogramCanvasProps>(
-  ({ spectrogramData, viewportSettings, currentTime, isRecording, isPlaying = false, playbackTime = 0, declutterAmount, showFrequencyMarkers = true, intensityScale = 'logarithmic', intensityBoost = 100, minFrequency = 50, maxFrequency = 5000, colorScheme = 'default' }, ref) => {
+  ({ spectrogramData, viewportSettings, currentTime, isRecording, isPlaying = false, playbackTime = 0, brightness = 100, declutterAmount, showFrequencyMarkers = true, intensityScale = 'logarithmic', intensityBoost = 100, minFrequency = 50, maxFrequency = 5000, colorScheme = 'default' }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -60,7 +61,7 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     ctx.scale(dpr, dpr);
 
     drawSpectrogram(ctx, dimensions.width, dimensions.height);
-  }, [spectrogramData, viewportSettings, currentTime, dimensions, declutterAmount, mousePos, isPlaying, playbackTime, showFrequencyMarkers, intensityScale, intensityBoost, minFrequency, maxFrequency, colorScheme]);
+  }, [spectrogramData, viewportSettings, currentTime, dimensions, brightness, declutterAmount, mousePos, isPlaying, playbackTime, showFrequencyMarkers, intensityScale, intensityBoost, minFrequency, maxFrequency, colorScheme]);
 
   const drawSpectrogram = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     const padding = { top: 32, right: 32, bottom: 48, left: 64 };
@@ -334,20 +335,29 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
 
     switch (intensityScale) {
       case 'linear':
-        return Math.max(0, Math.min(1, scaled));
+        scaled = Math.max(0, Math.min(1, scaled));
+        break;
       
       case 'logarithmic':
-        if (scaled <= 0) return 0;
-        const logScaled = Math.log10(1 + scaled * 9) / Math.log10(10);
-        return Math.max(0, Math.min(1, logScaled));
+        if (scaled <= 0) {
+          scaled = 0;
+        } else {
+          const logScaled = Math.log10(1 + scaled * 9) / Math.log10(10);
+          scaled = Math.max(0, Math.min(1, logScaled));
+        }
+        break;
       
       case 'power':
         const powered = Math.pow(scaled, 0.5);
-        return Math.max(0, Math.min(1, powered));
+        scaled = Math.max(0, Math.min(1, powered));
+        break;
       
       default:
-        return Math.max(0, Math.min(1, scaled));
+        scaled = Math.max(0, Math.min(1, scaled));
     }
+
+    const brightnessMultiplier = brightness / 100;
+    return Math.max(0, Math.min(1, scaled * brightnessMultiplier));
   };
 
   const magnitudeToColor = (magnitude: number): string => {
