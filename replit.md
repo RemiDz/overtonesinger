@@ -143,6 +143,7 @@ This is a professional audio analysis tool with a clean, function-first design:
 
 ## Recent Changes
 
+- 2025-11-06: Removed x-axis "Time (seconds)" label to prevent overlap with time values
 - 2025-11-06: **Maximized spectrogram space** - removed container padding (p-8→p-0) and minimized canvas padding
 - 2025-11-06: Reduced canvas padding further (top: 20→12, bottom: 32→24, right: 16→8, left: 40→32)
 - 2025-11-06: Optimized layout for mobile - centered Advanced Settings dialog and maximized spectrogram space

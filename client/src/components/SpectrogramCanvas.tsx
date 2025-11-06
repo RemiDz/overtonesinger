@@ -243,12 +243,6 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     ctx.textAlign = 'center';
     ctx.fillText('Frequency (Hz)', 0, 0);
     ctx.restore();
-
-    const totalHeight = padding.top + chartHeight + padding.bottom;
-    ctx.font = '14px Inter, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText('Time (seconds)', padding.left + chartWidth / 2, totalHeight - 16);
   };
 
   const drawFrequencyScale = (
