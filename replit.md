@@ -27,6 +27,12 @@ Perfect for vocal exercises, overtone singing analysis, and understanding harmon
 ### Control Adjustments
 - **Microphone Gain**: 0-200% gain control for input sensitivity
 - **Declutter**: 0-100 peak decluttering to clean up frequencies near overtones
+- **Advanced Settings**: Collapsible panel with:
+  - FFT Window Size: 1024/2048/4096 samples for frequency resolution
+  - Frequency Range: Adjustable min (20-1000 Hz) and max (1000-10000 Hz)
+  - Color Schemes: Default, Warm, Cool, and Monochrome palettes
+  - Intensity Scaling: Linear, logarithmic, or power curve mapping
+  - Brightness Boost: 25-200% multiplier for overall intensity
 
 ### Zoom & Navigation
 - Auto-zoom to fit entire recording when capture stops
@@ -82,11 +88,15 @@ The Y-axis uses a logarithmic scale where each octave (frequency doubling) appea
 - Octaves are visually equidistant
 
 ### Color Mapping
-Spectrogram uses a perceptually-optimized heatmap:
-- Blue: Low magnitude (quiet frequencies)
-- Cyan/Green: Medium magnitude
-- Yellow/Orange: High magnitude (strong frequencies)
-- Red: Very high magnitude (dominant frequencies)
+Spectrogram supports multiple color schemes:
+- **Default**: Blue → Cyan → Yellow → Red (perceptually-optimized)
+- **Warm**: Brown → Orange → Red → Yellow (warm palette)
+- **Cool**: Dark Blue → Green → Cyan (cool palette)
+- **Monochrome**: Black → White grayscale
+
+Each scheme maps magnitude intensity to color with configurable:
+- Intensity scaling (linear/logarithmic/power curves)
+- Brightness boost (25-200% multiplier)
 
 ## Usage
 
@@ -126,4 +136,7 @@ This is a professional audio analysis tool with a clean, function-first design:
 
 ## Recent Changes
 
-- 2025-10-27: Initial implementation with all core features
+- 2025-11-06: Added comprehensive settings panel with FFT size, frequency range, color schemes, and intensity controls
+- 2025-11-06: Implemented harmonic relationship detection with viewport-scoped analysis
+- 2025-11-06: Added WAV/PNG export functionality and synchronized playback position indicator
+- 2025-10-27: Initial implementation with core real-time FFT and spectrogram visualization

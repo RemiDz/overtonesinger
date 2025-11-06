@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
-import type { SpectrogramData, ViewportSettings, IntensityScaleMode } from '@shared/schema';
+import type { SpectrogramData, ViewportSettings, IntensityScaleMode, ColorScheme } from '@shared/schema';
 
 interface SpectrogramCanvasProps {
   spectrogramData: SpectrogramData | null;
@@ -12,6 +12,9 @@ interface SpectrogramCanvasProps {
   showFrequencyMarkers?: boolean;
   intensityScale?: IntensityScaleMode;
   intensityBoost?: number;
+  minFrequency?: number;
+  maxFrequency?: number;
+  colorScheme?: ColorScheme;
 }
 
 export interface SpectrogramCanvasHandle {
@@ -19,7 +22,7 @@ export interface SpectrogramCanvasHandle {
 }
 
 export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, SpectrogramCanvasProps>(
-  ({ spectrogramData, viewportSettings, currentTime, isRecording, isPlaying = false, playbackTime = 0, declutterAmount, showFrequencyMarkers = true, intensityScale = 'logarithmic', intensityBoost = 100 }, ref) => {
+  ({ spectrogramData, viewportSettings, currentTime, isRecording, isPlaying = false, playbackTime = 0, declutterAmount, showFrequencyMarkers = true, intensityScale = 'logarithmic', intensityBoost = 100, minFrequency = 50, maxFrequency = 5000, colorScheme = 'default' }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -57,7 +60,7 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     ctx.scale(dpr, dpr);
 
     drawSpectrogram(ctx, dimensions.width, dimensions.height);
-  }, [spectrogramData, viewportSettings, currentTime, dimensions, declutterAmount, mousePos, isPlaying, playbackTime, showFrequencyMarkers, intensityScale, intensityBoost]);
+  }, [spectrogramData, viewportSettings, currentTime, dimensions, declutterAmount, mousePos, isPlaying, playbackTime, showFrequencyMarkers, intensityScale, intensityBoost, minFrequency, maxFrequency, colorScheme]);
 
   const drawSpectrogram = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     const padding = { top: 32, right: 32, bottom: 48, left: 64 };
@@ -134,7 +137,26 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
       ctx.stroke();
     }
 
-    const freqSteps = [100, 200, 500, 1000, 2000, 5000];
+    const generateFreqSteps = () => {
+      const steps = [];
+      const range = maxFrequency - minFrequency;
+      if (range <= 1000) {
+        for (let f = Math.ceil(minFrequency / 100) * 100; f <= maxFrequency; f += 100) {
+          steps.push(f);
+        }
+      } else if (range <= 5000) {
+        for (let f = Math.ceil(minFrequency / 500) * 500; f <= maxFrequency; f += 500) {
+          steps.push(f);
+        }
+      } else {
+        for (let f = Math.ceil(minFrequency / 1000) * 1000; f <= maxFrequency; f += 1000) {
+          steps.push(f);
+        }
+      }
+      return steps.slice(0, 8);
+    };
+
+    const freqSteps = generateFreqSteps();
     freqSteps.forEach(freq => {
       const y = freqToY(freq, padding.top, chartHeight);
       ctx.beginPath();
@@ -145,11 +167,9 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
   };
 
   const freqToY = (freq: number, yStart: number, height: number): number => {
-    const minFreq = 20;
-    const maxFreq = 5000;
-    const logMin = Math.log10(minFreq);
-    const logMax = Math.log10(maxFreq);
-    const logFreq = Math.log10(Math.max(freq, minFreq));
+    const logMin = Math.log10(minFrequency);
+    const logMax = Math.log10(maxFrequency);
+    const logFreq = Math.log10(Math.max(freq, minFrequency));
     const normalized = (logFreq - logMin) / (logMax - logMin);
     return yStart + height * (1 - normalized);
   };
@@ -174,7 +194,26 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
 
-    const freqLabels = [100, 200, 500, 1000, 2000, 5000];
+    const generateFreqSteps = () => {
+      const steps = [];
+      const range = maxFrequency - minFrequency;
+      if (range <= 1000) {
+        for (let f = Math.ceil(minFrequency / 100) * 100; f <= maxFrequency; f += 100) {
+          steps.push(f);
+        }
+      } else if (range <= 5000) {
+        for (let f = Math.ceil(minFrequency / 500) * 500; f <= maxFrequency; f += 500) {
+          steps.push(f);
+        }
+      } else {
+        for (let f = Math.ceil(minFrequency / 1000) * 1000; f <= maxFrequency; f += 1000) {
+          steps.push(f);
+        }
+      }
+      return steps.slice(0, 8);
+    };
+
+    const freqLabels = generateFreqSteps();
     freqLabels.forEach(freq => {
       const y = freqToY(freq, padding.top, chartHeight);
       ctx.fillText(`${freq >= 1000 ? freq / 1000 + 'k' : freq} Hz`, padding.left - 8, y);
@@ -250,8 +289,8 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
       const processedMagnitudes = applyDeclutter(freqData, declutterThreshold);
 
       processedMagnitudes.forEach((magnitude, freqIndex) => {
-        const freq = (freqIndex / freqData.length) * 5000;
-        if (freq > 5000) return;
+        const freq = (freqIndex / freqData.length) * maxFrequency;
+        if (freq > maxFrequency || freq < minFrequency) return;
 
         const y = freqToY(freq, padding.top, chartHeight);
         
@@ -315,18 +354,50 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     const scaled = applyIntensityScaling(magnitude);
     const clamped = Math.max(0, Math.min(1, scaled));
     
-    if (clamped < 0.2) {
-      const t = clamped / 0.2;
-      return `rgba(0, 0, ${Math.floor(128 + t * 127)}, ${t * 0.5})`;
-    } else if (clamped < 0.5) {
-      const t = (clamped - 0.2) / 0.3;
-      return `rgba(0, ${Math.floor(t * 255)}, 255, ${0.5 + t * 0.3})`;
-    } else if (clamped < 0.8) {
-      const t = (clamped - 0.5) / 0.3;
-      return `rgba(${Math.floor(t * 255)}, 255, ${Math.floor(255 - t * 255)}, ${0.8 + t * 0.15})`;
-    } else {
-      const t = (clamped - 0.8) / 0.2;
-      return `rgba(255, ${Math.floor(255 - t * 100)}, 0, ${0.95 + t * 0.05})`;
+    switch (colorScheme) {
+      case 'warm':
+        if (clamped < 0.25) {
+          const t = clamped / 0.25;
+          return `rgba(${Math.floor(80 + t * 100)}, ${Math.floor(40 * t)}, 0, ${t * 0.6})`;
+        } else if (clamped < 0.6) {
+          const t = (clamped - 0.25) / 0.35;
+          return `rgba(${Math.floor(180 + t * 75)}, ${Math.floor(40 + t * 120)}, 0, ${0.6 + t * 0.3})`;
+        } else {
+          const t = (clamped - 0.6) / 0.4;
+          return `rgba(255, ${Math.floor(160 + t * 95)}, ${Math.floor(t * 100)}, ${0.9 + t * 0.1})`;
+        }
+      
+      case 'cool':
+        if (clamped < 0.25) {
+          const t = clamped / 0.25;
+          return `rgba(0, ${Math.floor(50 * t)}, ${Math.floor(100 + t * 155)}, ${t * 0.6})`;
+        } else if (clamped < 0.6) {
+          const t = (clamped - 0.25) / 0.35;
+          return `rgba(0, ${Math.floor(50 + t * 155)}, ${Math.floor(200 - t * 50)}, ${0.6 + t * 0.3})`;
+        } else {
+          const t = (clamped - 0.6) / 0.4;
+          return `rgba(${Math.floor(t * 100)}, ${Math.floor(205 + t * 50)}, ${Math.floor(150 + t * 105)}, ${0.9 + t * 0.1})`;
+        }
+      
+      case 'monochrome':
+        const gray = Math.floor(clamped * 255);
+        return `rgba(${gray}, ${gray}, ${gray}, ${clamped * 0.9 + 0.1})`;
+      
+      case 'default':
+      default:
+        if (clamped < 0.2) {
+          const t = clamped / 0.2;
+          return `rgba(0, 0, ${Math.floor(128 + t * 127)}, ${t * 0.5})`;
+        } else if (clamped < 0.5) {
+          const t = (clamped - 0.2) / 0.3;
+          return `rgba(0, ${Math.floor(t * 255)}, 255, ${0.5 + t * 0.3})`;
+        } else if (clamped < 0.8) {
+          const t = (clamped - 0.5) / 0.3;
+          return `rgba(${Math.floor(t * 255)}, 255, ${Math.floor(255 - t * 255)}, ${0.8 + t * 0.15})`;
+        } else {
+          const t = (clamped - 0.8) / 0.2;
+          return `rgba(255, ${Math.floor(255 - t * 100)}, 0, ${0.95 + t * 0.05})`;
+        }
     }
   };
 
@@ -375,13 +446,11 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
       { freq: 4000, label: '4k' },
     ];
 
-    const minFreq = 20;
-    const maxFreq = 5000;
-    const logMin = Math.log10(minFreq);
-    const logMax = Math.log10(maxFreq);
+    const logMin = Math.log10(minFrequency);
+    const logMax = Math.log10(maxFrequency);
 
     staticMarkers.forEach(({ freq, label }) => {
-      if (freq < minFreq || freq > maxFreq) return;
+      if (freq < minFrequency || freq > maxFrequency) return;
 
       const logFreq = Math.log10(freq);
       const normalizedY = 1 - (logFreq - logMin) / (logMax - logMin);
@@ -409,7 +478,7 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
       if (strength < 0.3) return;
 
       harmonics.forEach(({ freq, strength: harmonicStrength }, index) => {
-        if (freq < minFreq || freq > maxFreq) return;
+        if (freq < minFrequency || freq > maxFrequency) return;
 
         const logFreq = Math.log10(freq);
         const normalizedY = 1 - (logFreq - logMin) / (logMax - logMin);
@@ -443,10 +512,9 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
   const detectDominantFrequencies = (frequencies: number[][]): Array<{ fundamental: number; harmonics: Array<{ freq: number; strength: number }>; strength: number }> => {
     if (frequencies.length === 0) return [];
 
-    const maxFreq = 5000;
     const numBins = frequencies[0].length;
-    const binToFreq = (bin: number) => (bin / numBins) * maxFreq;
-    const freqToBin = (freq: number) => Math.round((freq / maxFreq) * numBins);
+    const binToFreq = (bin: number) => (bin / numBins) * maxFrequency;
+    const freqToBin = (freq: number) => Math.round((freq / maxFrequency) * numBins);
 
     const totalDuration = spectrogramData?.timeStamps[spectrogramData.timeStamps.length - 1] || 1;
     const zoomPercent = Math.max(1, Math.min(100, viewportSettings.zoom));
@@ -501,7 +569,7 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
       
       for (let n = 2; n <= 8; n++) {
         const expectedHarmonic = fundamental * n;
-        if (expectedHarmonic > maxFreq) break;
+        if (expectedHarmonic > maxFrequency) break;
 
         const expectedBin = freqToBin(expectedHarmonic);
         const tolerance = 3;

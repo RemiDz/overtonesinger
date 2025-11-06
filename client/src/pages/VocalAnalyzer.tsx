@@ -3,11 +3,11 @@ import { SpectrogramCanvas, type SpectrogramCanvasHandle } from '@/components/Sp
 import { TransportControls } from '@/components/TransportControls';
 import { SliderControl } from '@/components/SliderControl';
 import { ZoomControls } from '@/components/ZoomControls';
-import { IntensitySettings } from '@/components/IntensitySettings';
+import { AdvancedSettings } from '@/components/AdvancedSettings';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useToast } from '@/hooks/use-toast';
 import { exportToWAV, downloadBlob, exportCanvasToPNG } from '@/lib/audioExport';
-import type { RecordingState, AudioSettings, ViewportSettings, IntensityScaleMode } from '@shared/schema';
+import type { RecordingState, AudioSettings, ViewportSettings, IntensityScaleMode, ColorScheme, FFTSize } from '@shared/schema';
 
 export default function VocalAnalyzer() {
   const { toast } = useToast();
@@ -24,6 +24,9 @@ export default function VocalAnalyzer() {
     fftSize: 2048,
     intensityScale: 'logarithmic',
     intensityBoost: 100,
+    minFrequency: 50,
+    maxFrequency: 5000,
+    colorScheme: 'default',
   });
 
   const [viewportSettings, setViewportSettings] = useState<ViewportSettings>({
@@ -112,6 +115,18 @@ export default function VocalAnalyzer() {
 
   const handleIntensityBoostChange = (value: number) => {
     setAudioSettings(prev => ({ ...prev, intensityBoost: value }));
+  };
+
+  const handleFrequencyRangeChange = (min: number, max: number) => {
+    setAudioSettings(prev => ({ ...prev, minFrequency: min, maxFrequency: max }));
+  };
+
+  const handleFFTSizeChange = (value: FFTSize) => {
+    setAudioSettings(prev => ({ ...prev, fftSize: value }));
+  };
+
+  const handleColorSchemeChange = (value: ColorScheme) => {
+    setAudioSettings(prev => ({ ...prev, colorScheme: value }));
   };
 
   const handleZoomChange = (value: number) => {
@@ -236,11 +251,18 @@ export default function VocalAnalyzer() {
               className="w-40"
               data-testid="slider-declutter"
             />
-            <IntensitySettings
+            <AdvancedSettings
               intensityScale={audioSettings.intensityScale}
               intensityBoost={audioSettings.intensityBoost}
+              minFrequency={audioSettings.minFrequency}
+              maxFrequency={audioSettings.maxFrequency}
+              fftSize={audioSettings.fftSize}
+              colorScheme={audioSettings.colorScheme}
               onIntensityScaleChange={handleIntensityScaleChange}
               onIntensityBoostChange={handleIntensityBoostChange}
+              onFrequencyRangeChange={handleFrequencyRangeChange}
+              onFFTSizeChange={handleFFTSizeChange}
+              onColorSchemeChange={handleColorSchemeChange}
             />
           </div>
         </div>
@@ -259,6 +281,9 @@ export default function VocalAnalyzer() {
           declutterAmount={audioSettings.declutterAmount}
           intensityScale={audioSettings.intensityScale}
           intensityBoost={audioSettings.intensityBoost}
+          minFrequency={audioSettings.minFrequency}
+          maxFrequency={audioSettings.maxFrequency}
+          colorScheme={audioSettings.colorScheme}
         />
       </div>
 

@@ -17,14 +17,19 @@ export interface SpectrogramData {
 }
 
 export type IntensityScaleMode = 'linear' | 'logarithmic' | 'power';
+export type ColorScheme = 'default' | 'warm' | 'cool' | 'monochrome';
+export type FFTSize = 1024 | 2048 | 4096;
 
 export interface AudioSettings {
   microphoneGain: number;   // 0-100%
   declutterAmount: number;  // 0-100
   sampleRate: number;       // 48000 Hz
-  fftSize: number;          // FFT window size (e.g., 2048)
+  fftSize: FFTSize;         // FFT window size
   intensityScale: IntensityScaleMode; // Color intensity scaling
   intensityBoost: number;   // 0-200%, brightness multiplier
+  minFrequency: number;     // Minimum frequency to display (Hz)
+  maxFrequency: number;     // Maximum frequency to display (Hz)
+  colorScheme: ColorScheme; // Color palette preset
 }
 
 export type RecordingState = 'idle' | 'recording' | 'playing' | 'stopped';
