@@ -201,5 +201,6 @@ export function useAudioAnalyzer(settings: AudioSettings) {
     audioBuffer,
     isProcessing,
     error,
+    sampleRate: settings.sampleRate,
   };
 }

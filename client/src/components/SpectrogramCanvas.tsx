@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import type { SpectrogramData, ViewportSettings } from '@shared/schema';
 
 interface SpectrogramCanvasProps {
@@ -9,15 +9,18 @@ interface SpectrogramCanvasProps {
   declutterAmount: number;
 }
 
-export function SpectrogramCanvas({
-  spectrogramData,
-  viewportSettings,
-  currentTime,
-  isRecording,
-  declutterAmount,
-}: SpectrogramCanvasProps) {
+export interface SpectrogramCanvasHandle {
+  getCanvas: () => HTMLCanvasElement | null;
+}
+
+export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, SpectrogramCanvasProps>(
+  ({ spectrogramData, viewportSettings, currentTime, isRecording, declutterAmount }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    getCanvas: () => canvasRef.current,
+  }));
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
 
@@ -350,4 +353,4 @@ export function SpectrogramCanvas({
       />
     </div>
   );
-}
+});

@@ -1,14 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
-import { SpectrogramCanvas } from '@/components/SpectrogramCanvas';
+import { SpectrogramCanvas, type SpectrogramCanvasHandle } from '@/components/SpectrogramCanvas';
 import { TransportControls } from '@/components/TransportControls';
 import { SliderControl } from '@/components/SliderControl';
 import { ZoomControls } from '@/components/ZoomControls';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useToast } from '@/hooks/use-toast';
+import { exportToWAV, downloadBlob, exportCanvasToPNG } from '@/lib/audioExport';
 import type { RecordingState, AudioSettings, ViewportSettings } from '@shared/schema';
 
 export default function VocalAnalyzer() {
   const { toast } = useToast();
+  const spectrogramCanvasRef = useRef<SpectrogramCanvasHandle>(null);
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
   const [currentTime, setCurrentTime] = useState(0);
   const [totalDuration, setTotalDuration] = useState(0);
@@ -35,6 +37,7 @@ export default function VocalAnalyzer() {
     audioBuffer,
     isProcessing,
     error,
+    sampleRate,
   } = useAudioAnalyzer(audioSettings);
 
   useEffect(() => {
@@ -107,6 +110,60 @@ export default function VocalAnalyzer() {
     });
   };
 
+  const handleExportWAV = () => {
+    if (!audioBuffer) {
+      toast({
+        variant: 'destructive',
+        title: 'Export Failed',
+        description: 'No recording available to export',
+      });
+      return;
+    }
+
+    try {
+      const wavBlob = exportToWAV(audioBuffer, sampleRate);
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      downloadBlob(wavBlob, `vocal-recording-${timestamp}.wav`);
+      toast({
+        title: 'Export Successful',
+        description: 'WAV file downloaded',
+      });
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Export Failed',
+        description: 'Could not export WAV file',
+      });
+    }
+  };
+
+  const handleExportPNG = () => {
+    const canvas = spectrogramCanvasRef.current?.getCanvas();
+    if (!canvas) {
+      toast({
+        variant: 'destructive',
+        title: 'Export Failed',
+        description: 'Canvas not available',
+      });
+      return;
+    }
+
+    try {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      exportCanvasToPNG(canvas, `spectrogram-${timestamp}.png`);
+      toast({
+        title: 'Export Successful',
+        description: 'PNG image downloaded',
+      });
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Export Failed',
+        description: 'Could not export PNG image',
+      });
+    }
+  };
+
   const getStatusText = () => {
     if (isProcessing) return 'Processing...';
     switch (recordingState) {
@@ -129,6 +186,9 @@ export default function VocalAnalyzer() {
               onRecord={handleRecord}
               onPlay={handlePlay}
               onStop={handleStop}
+              onExportWAV={handleExportWAV}
+              onExportPNG={handleExportPNG}
+              hasRecording={!!audioBuffer}
               disabled={isProcessing}
             />
             <div className="text-sm font-medium text-muted-foreground ml-2">
@@ -163,6 +223,7 @@ export default function VocalAnalyzer() {
       {/* Spectrogram Chart */}
       <div className="flex-1 overflow-hidden">
         <SpectrogramCanvas
+          ref={spectrogramCanvasRef}
           spectrogramData={spectrogramData}
           viewportSettings={viewportSettings}
           currentTime={currentTime}

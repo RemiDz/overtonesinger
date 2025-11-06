@@ -1,4 +1,4 @@
-import { Circle, Play, Square } from 'lucide-react';
+import { Circle, Play, Square, Download, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { RecordingState } from '@shared/schema';
 
@@ -7,6 +7,9 @@ interface TransportControlsProps {
   onRecord: () => void;
   onPlay: () => void;
   onStop: () => void;
+  onExportWAV?: () => void;
+  onExportPNG?: () => void;
+  hasRecording?: boolean;
   disabled?: boolean;
 }
 
@@ -15,6 +18,9 @@ export function TransportControls({
   onRecord,
   onPlay,
   onStop,
+  onExportWAV,
+  onExportPNG,
+  hasRecording = false,
   disabled = false,
 }: TransportControlsProps) {
   const isRecording = recordingState === 'recording';
@@ -62,6 +68,36 @@ export function TransportControls({
       >
         <Square className="h-4 w-4 fill-current" />
       </Button>
+
+      {hasRecording && (
+        <>
+          <div className="w-px h-8 bg-border mx-1" />
+          
+          <Button
+            size="icon"
+            variant="outline"
+            onClick={onExportWAV}
+            disabled={disabled || isRecording || isPlaying}
+            className="w-10 h-10 rounded-full"
+            aria-label="Export WAV"
+            data-testid="button-export-wav"
+          >
+            <Download className="h-5 w-5" />
+          </Button>
+
+          <Button
+            size="icon"
+            variant="outline"
+            onClick={onExportPNG}
+            disabled={disabled}
+            className="w-10 h-10 rounded-full"
+            aria-label="Export PNG"
+            data-testid="button-export-png"
+          >
+            <Image className="h-5 w-5" />
+          </Button>
+        </>
+      )}
     </div>
   );
 }
