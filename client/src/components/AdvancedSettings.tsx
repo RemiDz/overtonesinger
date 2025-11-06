@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Settings, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
@@ -48,15 +48,15 @@ export function AdvancedSettings({
           <Settings className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="w-screen h-screen max-w-none m-0 p-0 rounded-none" data-testid="dialog-advanced-settings">
+      <DialogContent className="w-screen h-screen max-w-none m-0 p-0 rounded-none [&>button]:hidden" data-testid="dialog-advanced-settings">
         <div className="h-full flex flex-col">
           <DialogHeader className="flex-none px-4 py-3 border-b">
             <div className="flex items-center justify-between">
               <div>
                 <DialogTitle>Advanced Settings</DialogTitle>
-                <p className="text-xs text-muted-foreground mt-1">
+                <DialogDescription className="text-xs mt-1">
                   Customize visualization parameters
-                </p>
+                </DialogDescription>
               </div>
               <Button
                 variant="ghost"
