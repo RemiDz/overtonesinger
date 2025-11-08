@@ -133,15 +133,36 @@ Works on all modern browsers with Web Audio API support:
 
 ## Design Philosophy
 
-This is a professional audio analysis tool with a clean, function-first design:
+This is a professional audio analysis tool with a modern, sophisticated design inspired by professional audio software (Pro Tools, Ableton Live):
+
+### Visual Design
+- **Electric Blue Accent**: Modern `#00a8ff` primary color for active states and highlights
+- **Dark-Optimized Interface**: Deep charcoal backgrounds (#0f1419, #1a1f29, #252b38) reduce eye strain
+- **High Contrast**: Studio-grade contrast ratios for clarity during long sessions
+- **Crisp Borders**: Subtle `#2d3442` borders with professional separation
+- **Functional Shadows**: Real depth with properly configured shadow system
+
+### Layout & Interaction
 - Maximum visualization space for the spectrogram
 - Mobile-friendly layout with controls stacked vertically above and below the spectrogram
 - No horizontal scrolling required - all controls accessible on phone screens
 - Compact, efficient controls that don't clutter the interface
 - Immediate visual feedback for all interactions
-- Accessibility-first with keyboard navigation and ARIA labels
+- Professional hover and active states with elevation effects
+
+### Typography
+- **Inter Font**: Modern, professional sans-serif for UI
+- **SF Mono/Roboto Mono**: Monospace for precise numerical displays
+- Tighter 6px border radius for contemporary look
+- Carefully calibrated font hierarchy for technical precision
 
 ## Recent Changes
+
+- 2025-11-08: **Major design overhaul** - Implemented modern professional design system inspired by DAW software
+- 2025-11-08: Updated color palette to electric blue (#00a8ff) with deep charcoal backgrounds
+- 2025-11-08: Enhanced shadows and elevation system for depth and clarity
+- 2025-11-08: Optimized contrast ratios for both light and dark modes
+- 2025-11-08: Tightened border radius to 6px for contemporary aesthetic
 
 - 2025-11-06: Changed Advanced Settings to full-screen modal dialog with close button (X) for better mobile UX
 - 2025-11-06: Removed x-axis "Time (seconds)" label to prevent overlap with time values
