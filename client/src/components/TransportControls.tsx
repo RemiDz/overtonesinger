@@ -11,6 +11,7 @@ interface TransportControlsProps {
   onExportWAV?: () => void;
   onExportPNG?: () => void;
   onAutoAdjust?: () => void;
+  isAutoAdjusted?: boolean;
   hasRecording?: boolean;
   disabled?: boolean;
 }
@@ -24,6 +25,7 @@ export function TransportControls({
   onExportWAV,
   onExportPNG,
   onAutoAdjust,
+  isAutoAdjusted = false,
   hasRecording = false,
   disabled = false,
 }: TransportControlsProps) {
@@ -92,11 +94,11 @@ export function TransportControls({
           
           <Button
             size="icon"
-            variant="outline"
+            variant={isAutoAdjusted ? 'default' : 'outline'}
             onClick={onAutoAdjust}
             disabled={disabled || isRecording || isPlaying}
-            className="w-10 h-10 rounded-full hover:bg-primary/10 hover:text-primary"
-            aria-label="Auto-Adjust for Overtones"
+            className={`w-10 h-10 rounded-full ${isAutoAdjusted ? '' : 'hover:bg-primary/10 hover:text-primary'}`}
+            aria-label={isAutoAdjusted ? "Restore Original Settings" : "Auto-Adjust for Overtones"}
             data-testid="button-auto-adjust"
           >
             <Wand2 className="h-5 w-5" />

@@ -17,6 +17,8 @@ export default function VocalAnalyzer() {
   const [currentTime, setCurrentTime] = useState(0);
   const [playbackTime, setPlaybackTime] = useState(0);
   const [totalDuration, setTotalDuration] = useState(0);
+  const [isAutoAdjusted, setIsAutoAdjusted] = useState(false);
+  const [originalSettings, setOriginalSettings] = useState<{ brightness: number; declutterAmount: number } | null>(null);
   
   const [audioSettings, setAudioSettings] = useState<AudioSettings>({
     microphoneGain: 154,
@@ -141,6 +143,8 @@ export default function VocalAnalyzer() {
     setCurrentTime(0);
     setPlaybackTime(0);
     setTotalDuration(0);
+    setIsAutoAdjusted(false);
+    setOriginalSettings(null);
     setViewportSettings({
       zoom: 100,
       scrollPosition: 0,
@@ -251,6 +255,20 @@ export default function VocalAnalyzer() {
   };
 
   const handleAutoAdjust = () => {
+    if (isAutoAdjusted && originalSettings) {
+      setAudioSettings(prev => ({
+        ...prev,
+        brightness: originalSettings.brightness,
+        declutterAmount: originalSettings.declutterAmount,
+      }));
+      setIsAutoAdjusted(false);
+      toast({
+        title: 'Original Settings Restored',
+        description: `Brightness: ${originalSettings.brightness}%, Sharpness: ${originalSettings.declutterAmount}`,
+      });
+      return;
+    }
+
     if (!spectrogramData || spectrogramData.frequencies.length === 0) {
       toast({
         variant: 'destructive',
@@ -259,6 +277,11 @@ export default function VocalAnalyzer() {
       });
       return;
     }
+
+    setOriginalSettings({
+      brightness: audioSettings.brightness,
+      declutterAmount: audioSettings.declutterAmount,
+    });
 
     let sumIntensity = 0;
     let maxIntensity = 0;
@@ -291,6 +314,8 @@ export default function VocalAnalyzer() {
       declutterAmount: Math.min(optimalSharpness, 60),
     }));
 
+    setIsAutoAdjusted(true);
+
     toast({
       title: 'Auto-Adjusted',
       description: `Optimized for overtone visibility (Brightness: ${optimalBrightness}%, Sharpness: ${Math.min(optimalSharpness, 60)})`,
@@ -321,6 +346,7 @@ export default function VocalAnalyzer() {
             onExportWAV={handleExportWAV}
             onExportPNG={handleExportPNG}
             onAutoAdjust={handleAutoAdjust}
+            isAutoAdjusted={isAutoAdjusted}
             hasRecording={!!audioBuffer}
             disabled={isProcessing}
           />
