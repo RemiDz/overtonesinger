@@ -250,6 +250,53 @@ export default function VocalAnalyzer() {
     }
   };
 
+  const handleAutoAdjust = () => {
+    if (!spectrogramData || spectrogramData.frequencies.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Auto-Adjust Failed',
+        description: 'No spectrogram data available',
+      });
+      return;
+    }
+
+    let sumIntensity = 0;
+    let maxIntensity = 0;
+    let count = 0;
+
+    for (const timeSlice of spectrogramData.frequencies) {
+      for (const intensity of timeSlice) {
+        sumIntensity += intensity;
+        maxIntensity = Math.max(maxIntensity, intensity);
+        count++;
+      }
+    }
+
+    const avgIntensity = count > 0 ? sumIntensity / count : 0;
+    
+    let optimalBrightness = 150;
+    if (avgIntensity < 0.2) {
+      optimalBrightness = 180;
+    } else if (avgIntensity < 0.4) {
+      optimalBrightness = 160;
+    } else if (avgIntensity > 0.7) {
+      optimalBrightness = 120;
+    }
+
+    const optimalSharpness = Math.round(avgIntensity * 50 + 15);
+
+    setAudioSettings(prev => ({
+      ...prev,
+      brightness: optimalBrightness,
+      declutterAmount: Math.min(optimalSharpness, 60),
+    }));
+
+    toast({
+      title: 'Auto-Adjusted',
+      description: `Optimized for overtone visibility (Brightness: ${optimalBrightness}%, Sharpness: ${Math.min(optimalSharpness, 60)})`,
+    });
+  };
+
   const getStatusText = () => {
     if (isProcessing) return 'Processing...';
     switch (recordingState) {
@@ -273,6 +320,7 @@ export default function VocalAnalyzer() {
             onReset={handleReset}
             onExportWAV={handleExportWAV}
             onExportPNG={handleExportPNG}
+            onAutoAdjust={handleAutoAdjust}
             hasRecording={!!audioBuffer}
             disabled={isProcessing}
           />
