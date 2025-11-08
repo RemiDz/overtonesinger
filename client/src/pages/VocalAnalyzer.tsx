@@ -347,6 +347,7 @@ export default function VocalAnalyzer() {
           minFrequency={audioSettings.minFrequency}
           maxFrequency={audioSettings.maxFrequency}
           colorScheme={audioSettings.colorScheme}
+          sampleRate={sampleRate}
         />
       </div>
 

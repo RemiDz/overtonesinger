@@ -16,6 +16,7 @@ interface SpectrogramCanvasProps {
   minFrequency?: number;
   maxFrequency?: number;
   colorScheme?: ColorScheme;
+  sampleRate?: number;
 }
 
 export interface SpectrogramCanvasHandle {
@@ -23,7 +24,7 @@ export interface SpectrogramCanvasHandle {
 }
 
 export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, SpectrogramCanvasProps>(
-  ({ spectrogramData, viewportSettings, currentTime, isRecording, isPlaying = false, playbackTime = 0, brightness = 100, declutterAmount, showFrequencyMarkers = true, intensityScale = 'logarithmic', intensityBoost = 100, minFrequency = 50, maxFrequency = 5000, colorScheme = 'default' }, ref) => {
+  ({ spectrogramData, viewportSettings, currentTime, isRecording, isPlaying = false, playbackTime = 0, brightness = 100, declutterAmount, showFrequencyMarkers = true, intensityScale = 'logarithmic', intensityBoost = 100, minFrequency = 50, maxFrequency = 5000, colorScheme = 'default', sampleRate = 48000 }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -314,13 +315,15 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
 
       const freqData = frequencies[timeIndex];
       const processedMagnitudes = applyDeclutter(freqData, declutterThreshold);
+      
+      const nyquistFreq = sampleRate / 2;
 
       for (let freqIndex = 0; freqIndex < processedMagnitudes.length - 1; freqIndex++) {
         const magnitude = processedMagnitudes[freqIndex];
         if (magnitude === 0) continue;
 
-        const freq1 = (freqIndex / freqData.length) * maxFrequency;
-        const freq2 = ((freqIndex + 1) / freqData.length) * maxFrequency;
+        const freq1 = (freqIndex / freqData.length) * nyquistFreq;
+        const freq2 = ((freqIndex + 1) / freqData.length) * nyquistFreq;
         
         if (freq1 > maxFrequency || freq2 < minFrequency) continue;
 
@@ -550,8 +553,9 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     if (frequencies.length === 0) return [];
 
     const numBins = frequencies[0].length;
-    const binToFreq = (bin: number) => (bin / numBins) * maxFrequency;
-    const freqToBin = (freq: number) => Math.round((freq / maxFrequency) * numBins);
+    const nyquistFreq = sampleRate / 2;
+    const binToFreq = (bin: number) => (bin / numBins) * nyquistFreq;
+    const freqToBin = (freq: number) => Math.round((freq / nyquistFreq) * numBins);
 
     const totalDuration = spectrogramData?.timeStamps[spectrogramData.timeStamps.length - 1] || 1;
     const zoomPercent = Math.max(1, Math.min(100, viewportSettings.zoom));
@@ -606,7 +610,7 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
       
       for (let n = 2; n <= 8; n++) {
         const expectedHarmonic = fundamental * n;
-        if (expectedHarmonic > maxFrequency) break;
+        if (expectedHarmonic > sampleRate / 2) break;
 
         const expectedBin = freqToBin(expectedHarmonic);
         const tolerance = 3;
