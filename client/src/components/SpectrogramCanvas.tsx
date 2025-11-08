@@ -306,7 +306,8 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     if (visibleIndices.length === 0) return;
 
     const declutterThreshold = declutterAmount / 100;
-    const barWidth = Math.max(1, chartWidth / visibleIndices.length);
+    const idealBarWidth = chartWidth / visibleIndices.length;
+    const barWidth = Math.max(1.5, idealBarWidth * 1.1);
 
     visibleIndices.forEach((timeIndex) => {
       const time = timeStamps[timeIndex];
