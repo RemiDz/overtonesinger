@@ -1,4 +1,4 @@
-import { Circle, Play, Square, Download, Image, RotateCcw, Wand2 } from 'lucide-react';
+import { Circle, Play, Square, Download, Image, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { RecordingState } from '@shared/schema';
 
@@ -10,8 +10,6 @@ interface TransportControlsProps {
   onReset: () => void;
   onExportWAV?: () => void;
   onExportPNG?: () => void;
-  onAutoAdjust?: () => void;
-  isAutoAdjusted?: boolean;
   hasRecording?: boolean;
   disabled?: boolean;
 }
@@ -24,8 +22,6 @@ export function TransportControls({
   onReset,
   onExportWAV,
   onExportPNG,
-  onAutoAdjust,
-  isAutoAdjusted = false,
   hasRecording = false,
   disabled = false,
 }: TransportControlsProps) {
@@ -91,18 +87,6 @@ export function TransportControls({
       {hasRecording && (
         <>
           <div className="w-px h-8 bg-border mx-1" />
-          
-          <Button
-            size="icon"
-            variant={isAutoAdjusted ? 'default' : 'outline'}
-            onClick={onAutoAdjust}
-            disabled={disabled || isRecording || isPlaying}
-            className={`w-10 h-10 rounded-full ${isAutoAdjusted ? '' : 'hover:bg-primary/10 hover:text-primary'}`}
-            aria-label={isAutoAdjusted ? "Restore Original Settings" : "Auto-Adjust for Overtones"}
-            data-testid="button-auto-adjust"
-          >
-            <Wand2 className="h-5 w-5" />
-          </Button>
           
           <Button
             size="icon"

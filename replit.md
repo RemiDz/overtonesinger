@@ -26,8 +26,6 @@ Perfect for vocal exercises, overtone singing analysis, and understanding harmon
 - **Record**: Start capturing microphone input
 - **Play**: Playback recorded audio
 - **Stop**: Stop recording or playback
-- **Reset**: Clear all data and start fresh
-- **✨ Auto-Adjust** (Magic Wand): Toggle button that optimizes brightness and sharpness for best overtone visibility - click once to auto-adjust, click again to restore original settings (appears after recording)
 
 ### Control Adjustments
 All controls use intuitive icons (like old TV controls) instead of text labels, arranged in a single horizontal line that dynamically adjusts to screen width:
@@ -162,8 +160,6 @@ This is a professional audio analysis tool with a modern, sophisticated design i
 
 ## Recent Changes
 
-- 2025-11-08: **Auto-Adjust magic wand toggle button** - Click to optimize brightness/sharpness for overtones, click again to restore original settings (button lights up when active)
-- 2025-11-08: Added higher resolution FFT options (8192, 16384, 32768) to reduce pixelation
 - 2025-11-08: **Live scrolling spectrogram** - New audio now appears from the right and scrolls left during recording (10-second rolling window)
 - 2025-11-08: Auto-zoom to fit entire recording when capture stops
 - 2025-11-08: **Major design overhaul** - Implemented modern professional design system inspired by DAW software
