@@ -41,8 +41,8 @@ export function ZoomControls({
             Zoom
           </span>
           <Slider
-            value={[zoom]}
-            onValueChange={(values) => onZoomChange(values[0])}
+            value={[100 - zoom]}
+            onValueChange={(values) => onZoomChange(100 - values[0])}
             min={0}
             max={100}
             step={1}
