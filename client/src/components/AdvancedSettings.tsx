@@ -88,7 +88,10 @@ export function AdvancedSettings({
                     <SelectContent>
                       <SelectItem value="1024">1024 (faster, less detail)</SelectItem>
                       <SelectItem value="2048">2048 (balanced)</SelectItem>
-                      <SelectItem value="4096">4096 (slower, more detail)</SelectItem>
+                      <SelectItem value="4096">4096 (good detail)</SelectItem>
+                      <SelectItem value="8192">8192 (high resolution)</SelectItem>
+                      <SelectItem value="16384">16384 (very high resolution)</SelectItem>
+                      <SelectItem value="32768">32768 (maximum resolution)</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">

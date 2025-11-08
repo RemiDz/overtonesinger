@@ -18,7 +18,7 @@ export interface SpectrogramData {
 
 export type IntensityScaleMode = 'linear' | 'logarithmic' | 'power';
 export type ColorScheme = 'default' | 'warm' | 'cool' | 'monochrome';
-export type FFTSize = 1024 | 2048 | 4096;
+export type FFTSize = 1024 | 2048 | 4096 | 8192 | 16384 | 32768;
 
 export interface AudioSettings {
   microphoneGain: number;   // 0-200%

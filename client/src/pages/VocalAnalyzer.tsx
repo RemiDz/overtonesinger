@@ -23,7 +23,7 @@ export default function VocalAnalyzer() {
     brightness: 137,
     declutterAmount: 0,
     sampleRate: 48000,
-    fftSize: 4096,
+    fftSize: 8192,
     intensityScale: 'power',
     intensityBoost: 100,
     minFrequency: 50,
