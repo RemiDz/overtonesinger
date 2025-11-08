@@ -60,6 +60,33 @@ export default function VocalAnalyzer() {
     }
   }, [error, toast]);
 
+  useEffect(() => {
+    if (recordingState === 'recording' && spectrogramData) {
+      const currentDuration = spectrogramData.timeStamps[spectrogramData.timeStamps.length - 1] || 0;
+      setCurrentTime(currentDuration);
+      setTotalDuration(currentDuration);
+      
+      const liveWindowDuration = 10;
+      
+      if (currentDuration <= liveWindowDuration) {
+        setViewportSettings({
+          zoom: 100,
+          scrollPosition: 0,
+          visibleDuration: liveWindowDuration,
+        });
+      } else {
+        const zoomPercent = (liveWindowDuration / currentDuration) * 100;
+        const scrollPosition = 1;
+        
+        setViewportSettings({
+          zoom: zoomPercent,
+          scrollPosition: scrollPosition,
+          visibleDuration: liveWindowDuration,
+        });
+      }
+    }
+  }, [recordingState, spectrogramData]);
+
   const handleRecord = async () => {
     if (recordingState === 'idle' || recordingState === 'stopped') {
       try {
@@ -96,7 +123,11 @@ export default function VocalAnalyzer() {
       const duration = stopRecording();
       setRecordingState('stopped');
       setTotalDuration(duration);
-      setViewportSettings(prev => ({ ...prev, zoom: 100 }));
+      setViewportSettings({
+        zoom: 100,
+        scrollPosition: 0,
+        visibleDuration: duration || 10,
+      });
     } else if (recordingState === 'playing') {
       stopPlayback();
       setRecordingState('stopped');
