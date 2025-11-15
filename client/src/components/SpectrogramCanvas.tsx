@@ -27,6 +27,7 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
   ({ spectrogramData, viewportSettings, currentTime, isRecording, isPlaying = false, playbackTime = 0, brightness = 100, declutterAmount, showFrequencyMarkers = true, intensityScale = 'logarithmic', intensityBoost = 100, minFrequency = 50, maxFrequency = 5000, colorScheme = 'default', sampleRate = 48000 }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useImperativeHandle(ref, () => ({
     getCanvas: () => canvasRef.current,
@@ -62,13 +63,16 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: false });
     if (!ctx) return;
 
     const dpr = window.devicePixelRatio || 1;
     canvas.width = dimensions.width * dpr;
     canvas.height = dimensions.height * dpr;
     ctx.scale(dpr, dpr);
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     drawSpectrogram(ctx, dimensions.width, dimensions.height);
   }, [spectrogramData, viewportSettings, currentTime, dimensions, brightness, declutterAmount, mousePos, isPlaying, playbackTime, showFrequencyMarkers, intensityScale, intensityBoost, minFrequency, maxFrequency, colorScheme]);
@@ -320,14 +324,31 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
 
     if (visibleIndices.length === 0) return;
 
-    const declutterThreshold = declutterAmount / 100;
-    const idealBarWidth = chartWidth / visibleIndices.length;
-    const barWidth = Math.max(1.5, idealBarWidth * 1.1);
+    if (!offscreenCanvasRef.current) {
+      offscreenCanvasRef.current = document.createElement('canvas');
+    }
+    
+    const offscreenCanvas = offscreenCanvasRef.current;
+    const offscreenWidth = Math.max(chartWidth * 2, visibleIndices.length);
+    const offscreenHeight = chartHeight * 2;
+    
+    if (offscreenCanvas.width !== offscreenWidth || offscreenCanvas.height !== offscreenHeight) {
+      offscreenCanvas.width = offscreenWidth;
+      offscreenCanvas.height = offscreenHeight;
+    }
+    
+    const offscreenCtx = offscreenCanvas.getContext('2d', { alpha: false });
+    if (!offscreenCtx) return;
 
-    visibleIndices.forEach((timeIndex) => {
-      const time = timeStamps[timeIndex];
-      const normalizedTime = (time - startTime) / visibleDuration;
-      const x = padding.left + normalizedTime * chartWidth;
+    offscreenCtx.fillStyle = '#000000';
+    offscreenCtx.fillRect(0, 0, offscreenWidth, offscreenHeight);
+
+    const declutterThreshold = declutterAmount / 100;
+    const pixelsPerSlice = offscreenWidth / visibleIndices.length;
+    const barWidth = Math.max(1, pixelsPerSlice * 1.2);
+
+    visibleIndices.forEach((timeIndex, sliceIdx) => {
+      const x = sliceIdx * pixelsPerSlice;
 
       const freqData = frequencies[timeIndex];
       const processedMagnitudes = applyDeclutter(freqData, declutterThreshold);
@@ -343,16 +364,37 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
         
         if (freq1 > maxFrequency || freq2 < minFrequency) continue;
 
-        const y1 = freqToY(Math.max(freq1, minFrequency), padding.top, chartHeight);
-        const y2 = freqToY(Math.min(freq2, maxFrequency), padding.top, chartHeight);
+        const y1Norm = freqToYNormalized(Math.max(freq1, minFrequency));
+        const y2Norm = freqToYNormalized(Math.min(freq2, maxFrequency));
         
+        const y1 = y1Norm * offscreenHeight;
+        const y2 = y2Norm * offscreenHeight;
         const barHeight = Math.abs(y2 - y1);
         
         const color = magnitudeToColor(magnitude);
-        ctx.fillStyle = color;
-        ctx.fillRect(x, Math.min(y1, y2), barWidth, Math.max(barHeight, 1));
+        offscreenCtx.fillStyle = color;
+        offscreenCtx.fillRect(x, Math.min(y1, y2), barWidth, Math.max(barHeight, 1.5));
       }
     });
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(
+      offscreenCanvas,
+      0, 0, offscreenWidth, offscreenHeight,
+      padding.left, padding.top, chartWidth, chartHeight
+    );
+    ctx.restore();
+  };
+
+  const freqToYNormalized = (freq: number): number => {
+    const minLog = Math.log(minFrequency);
+    const maxLog = Math.log(maxFrequency);
+    const freqLog = Math.log(Math.max(freq, minFrequency));
+    
+    const normalizedPosition = (freqLog - minLog) / (maxLog - minLog);
+    return 1 - normalizedPosition;
   };
 
   const applyDeclutter = (magnitudes: number[], threshold: number): number[] => {

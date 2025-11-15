@@ -17,6 +17,7 @@ Perfect for vocal exercises, overtone singing analysis, and understanding harmon
 - Microphone capture at 48kHz sampling rate
 - Live FFT processing with 2048-sample window
 - 60fps spectrogram rendering using Canvas API
+- **High-quality anti-aliased rendering**: Off-screen canvas at 2x resolution with bilinear interpolation for smooth, professional appearance
 - **Live scrolling spectrogram**: During recording, new audio appears from the right and scrolls left (like professional audio tools)
 - Fixed 10-second rolling window during live recording for optimal real-time visualization
 - Logarithmic frequency scale for clear octave visualization
@@ -160,6 +161,7 @@ This is a professional audio analysis tool with a modern, sophisticated design i
 
 ## Recent Changes
 
+- 2025-11-15: **Smooth anti-aliased rendering** - Implemented off-screen canvas rendering at 2x resolution with high-quality image smoothing to eliminate pixelation
 - 2025-11-15: **Added donate button** - Heart icon in top-right corner links to PayPal for project support
 - 2025-11-15: **Removed volume slider** - Simplified interface by removing unused volume/gain control
 - 2025-11-15: **Immediate recording** - Removed 3-second countdown; recording starts immediately when Record button is clicked
