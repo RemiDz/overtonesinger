@@ -26,6 +26,7 @@ Perfect for vocal exercises, overtone singing analysis, and understanding harmon
 - **Record**: Start capturing microphone input
 - **Play**: Playback recorded audio
 - **Stop**: Stop recording or playback
+- **Donate**: Heart icon button to support the project via PayPal
 
 ### Control Adjustments
 All controls use intuitive icons (like old TV controls) instead of text labels, arranged in a single horizontal line that dynamically adjusts to screen width:
@@ -159,6 +160,7 @@ This is a professional audio analysis tool with a modern, sophisticated design i
 
 ## Recent Changes
 
+- 2025-11-15: **Added donate button** - Heart icon in top-right corner links to PayPal for project support
 - 2025-11-15: **Removed volume slider** - Simplified interface by removing unused volume/gain control
 - 2025-11-15: **Immediate recording** - Removed 3-second countdown; recording starts immediately when Record button is clicked
 - 2025-11-15: **Monotonic overtone counter** - Overtone count only increases during recording, never decreases (resets on new session)

@@ -6,7 +6,7 @@ import { ZoomControls } from '@/components/ZoomControls';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useToast } from '@/hooks/use-toast';
 import { exportToWAV, downloadBlob, exportCanvasToPNG } from '@/lib/audioExport';
-import { Sun, Contrast, Palette, Activity } from 'lucide-react';
+import { Sun, Contrast, Palette, Activity, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { RecordingState, AudioSettings, ViewportSettings, IntensityScaleMode, ColorScheme, FFTSize } from '@shared/schema';
@@ -345,8 +345,27 @@ export default function VocalAnalyzer() {
             hasRecording={!!audioBuffer}
             disabled={isProcessing}
           />
-          <div className="text-sm font-medium text-muted-foreground">
-            {getStatusText()}
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="text-sm font-medium text-muted-foreground">
+              {getStatusText()}
+            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => window.open('https://www.paypal.com/donate/?hosted_button_id=ABRWM7GB438R4', '_blank', 'noopener,noreferrer')}
+                  data-testid="button-donate"
+                  className="text-pink-500 hover:text-pink-600 dark:text-pink-400 dark:hover:text-pink-500"
+                >
+                  <Heart className="h-4 w-4 fill-current" />
+                  <span className="sr-only">Donate</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Support this project</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
       </div>
