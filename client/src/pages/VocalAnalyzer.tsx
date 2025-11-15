@@ -3,11 +3,12 @@ import { SpectrogramCanvas, type SpectrogramCanvasHandle } from '@/components/Sp
 import { TransportControls } from '@/components/TransportControls';
 import { SliderControl } from '@/components/SliderControl';
 import { ZoomControls } from '@/components/ZoomControls';
-import { AdvancedSettings } from '@/components/AdvancedSettings';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useToast } from '@/hooks/use-toast';
 import { exportToWAV, downloadBlob, exportCanvasToPNG } from '@/lib/audioExport';
-import { Volume2, Sun, Contrast } from 'lucide-react';
+import { Volume2, Sun, Contrast, Palette, Activity } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { RecordingState, AudioSettings, ViewportSettings, IntensityScaleMode, ColorScheme, FFTSize } from '@shared/schema';
 
 export default function VocalAnalyzer() {
@@ -219,6 +220,39 @@ export default function VocalAnalyzer() {
     setAudioSettings(prev => ({ ...prev, colorScheme: value }));
   };
 
+  const cycleColorScheme = () => {
+    const schemes: ColorScheme[] = ['default', 'warm', 'cool', 'monochrome'];
+    const currentIndex = schemes.indexOf(audioSettings.colorScheme);
+    const nextIndex = (currentIndex + 1) % schemes.length;
+    setAudioSettings(prev => ({ ...prev, colorScheme: schemes[nextIndex] }));
+  };
+
+  const cycleIntensityScale = () => {
+    const scales: IntensityScaleMode[] = ['linear', 'logarithmic', 'power'];
+    const currentIndex = scales.indexOf(audioSettings.intensityScale);
+    const nextIndex = (currentIndex + 1) % scales.length;
+    setAudioSettings(prev => ({ ...prev, intensityScale: scales[nextIndex] }));
+  };
+
+  const getColorSchemeLabel = () => {
+    const labels = {
+      default: 'Default',
+      warm: 'Warm',
+      cool: 'Cool',
+      monochrome: 'Mono'
+    };
+    return labels[audioSettings.colorScheme];
+  };
+
+  const getIntensityScaleLabel = () => {
+    const labels = {
+      linear: 'Linear',
+      logarithmic: 'Log',
+      power: 'Power'
+    };
+    return labels[audioSettings.intensityScale];
+  };
+
   const handleZoomChange = (value: number) => {
     setViewportSettings(prev => ({ ...prev, zoom: value }));
   };
@@ -351,17 +385,41 @@ export default function VocalAnalyzer() {
             className="flex-1 min-w-0 max-w-32"
             data-testid="slider-declutter"
           />
-          <div className="flex-shrink-0">
-            <AdvancedSettings
-              intensityScale={audioSettings.intensityScale}
-              intensityBoost={audioSettings.intensityBoost}
-              fftSize={audioSettings.fftSize}
-              colorScheme={audioSettings.colorScheme}
-              onIntensityScaleChange={handleIntensityScaleChange}
-              onIntensityBoostChange={handleIntensityBoostChange}
-              onFFTSizeChange={handleFFTSizeChange}
-              onColorSchemeChange={handleColorSchemeChange}
-            />
+          <div className="flex-shrink-0 flex gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={cycleColorScheme}
+                  data-testid="button-color-scheme"
+                  className="relative"
+                >
+                  <Palette className="h-4 w-4" />
+                  <span className="sr-only">Color Scheme: {getColorSchemeLabel()}</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Color: {getColorSchemeLabel()}</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={cycleIntensityScale}
+                  data-testid="button-intensity-scale"
+                  className="relative"
+                >
+                  <Activity className="h-4 w-4" />
+                  <span className="sr-only">Intensity Scale: {getIntensityScaleLabel()}</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Intensity: {getIntensityScaleLabel()}</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
       </div>
