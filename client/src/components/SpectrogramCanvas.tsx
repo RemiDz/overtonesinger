@@ -475,43 +475,8 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     const computedStyle = getComputedStyle(document.documentElement);
     const primaryColor = computedStyle.getPropertyValue('--primary');
 
-    const staticMarkers = [
-      { freq: 110, label: 'A2' },
-      { freq: 220, label: 'A3' },
-      { freq: 440, label: 'A4' },
-      { freq: 880, label: 'A5' },
-      { freq: 1760, label: 'A6' },
-      { freq: 1000, label: '1k' },
-      { freq: 2000, label: '2k' },
-      { freq: 3000, label: '3k' },
-      { freq: 4000, label: '4k' },
-    ];
-
     const logMin = Math.log10(minFrequency);
     const logMax = Math.log10(maxFrequency);
-
-    staticMarkers.forEach(({ freq, label }) => {
-      if (freq < minFrequency || freq > maxFrequency) return;
-
-      const logFreq = Math.log10(freq);
-      const normalizedY = 1 - (logFreq - logMin) / (logMax - logMin);
-      const y = padding.top + normalizedY * chartHeight;
-
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([2, 4]);
-
-      ctx.beginPath();
-      ctx.moveTo(padding.left, y);
-      ctx.lineTo(padding.left + chartWidth, y);
-      ctx.stroke();
-
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-      ctx.font = '9px Inter, sans-serif';
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(label, padding.left - 4, y);
-    });
 
     const detectedHarmonics = detectDominantFrequencies(spectrogramData.frequencies);
     

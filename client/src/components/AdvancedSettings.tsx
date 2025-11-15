@@ -86,8 +86,6 @@ export function AdvancedSettings({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1024">1024 (faster, less detail)</SelectItem>
-                      <SelectItem value="2048">2048 (balanced)</SelectItem>
                       <SelectItem value="4096">4096 (good detail)</SelectItem>
                       <SelectItem value="8192">8192 (high resolution)</SelectItem>
                       <SelectItem value="16384">16384 (very high resolution)</SelectItem>
@@ -179,15 +177,15 @@ export function AdvancedSettings({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="linear">Linear</SelectItem>
-                      <SelectItem value="logarithmic">Logarithmic</SelectItem>
-                      <SelectItem value="power">Power (√x)</SelectItem>
+                      <SelectItem value="linear">Normal</SelectItem>
+                      <SelectItem value="logarithmic">Boost Quiet Sounds</SelectItem>
+                      <SelectItem value="power">Balanced</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    {intensityScale === 'linear' && 'Direct 1:1 mapping'}
-                    {intensityScale === 'logarithmic' && 'Emphasizes weak signals'}
-                    {intensityScale === 'power' && 'Balanced visibility'}
+                    {intensityScale === 'linear' && 'Shows sounds as they are'}
+                    {intensityScale === 'logarithmic' && 'Makes quiet sounds easier to see'}
+                    {intensityScale === 'power' && 'Good mix of loud and quiet sounds'}
                   </p>
                 </div>
               </div>
