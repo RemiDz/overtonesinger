@@ -535,7 +535,8 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
 
     ctx.setLineDash([]);
     
-    return allMarkers.length;
+    const overtoneCount = allMarkers.filter(m => !m.isFundamental).length;
+    return overtoneCount;
   };
 
   const detectDominantFrequencies = (frequencies: number[][]): Array<{ fundamental: number; harmonics: Array<{ freq: number; strength: number }>; strength: number }> => {
@@ -586,51 +587,57 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
       }
     }
 
-    peaks.sort((a, b) => b.magnitude - a.magnitude);
-    const topPeaks = peaks.slice(0, 10);
+    if (peaks.length === 0) return [];
 
-    const harmonicSeries: Array<{ fundamental: number; harmonics: Array<{ freq: number; strength: number }>; strength: number }> = [];
-
-    topPeaks.forEach(peak => {
-      const fundamental = peak.freq;
-      const harmonics: Array<{ freq: number; strength: number }> = [
-        { freq: fundamental, strength: peak.magnitude }
-      ];
-      
-      for (let n = 2; n <= 8; n++) {
-        const expectedHarmonic = fundamental * n;
-        if (expectedHarmonic > sampleRate / 2) break;
-
-        const expectedBin = freqToBin(expectedHarmonic);
-        const tolerance = 3;
-        
-        let maxMag = 0;
-        let bestBin = expectedBin;
-        for (let b = expectedBin - tolerance; b <= expectedBin + tolerance; b++) {
-          if (b >= 0 && b < averageMagnitudes.length) {
-            if (averageMagnitudes[b] > maxMag) {
-              maxMag = averageMagnitudes[b];
-              bestBin = b;
-            }
-          }
-        }
-
-        if (maxMag > 0.08) {
-          const actualFreq = binToFreq(bestBin);
-          harmonics.push({ freq: actualFreq, strength: maxMag });
-        }
-      }
-
-      if (harmonics.length >= 3) {
-        harmonicSeries.push({
-          fundamental,
-          harmonics,
-          strength: Math.min(1, peak.magnitude * 1.5)
-        });
-      }
+    peaks.sort((a, b) => {
+      const aScore = a.magnitude * (1 + (1000 / Math.max(a.freq, 100)));
+      const bScore = b.magnitude * (1 + (1000 / Math.max(b.freq, 100)));
+      return bScore - aScore;
     });
 
-    return harmonicSeries;
+    const dominantPeak = peaks[0];
+    const fundamental = dominantPeak.freq;
+    const fundamentalMagnitude = dominantPeak.magnitude;
+    
+    const harmonics: Array<{ freq: number; strength: number }> = [
+      { freq: fundamental, strength: fundamentalMagnitude }
+    ];
+    
+    const minHarmonicStrength = fundamentalMagnitude * 0.25;
+    
+    for (let n = 2; n <= 8; n++) {
+      const expectedHarmonic = fundamental * n;
+      if (expectedHarmonic > sampleRate / 2) break;
+
+      const expectedBin = freqToBin(expectedHarmonic);
+      const tolerance = 3;
+      
+      let maxMag = 0;
+      let bestBin = expectedBin;
+      for (let b = expectedBin - tolerance; b <= expectedBin + tolerance; b++) {
+        if (b >= 0 && b < averageMagnitudes.length) {
+          if (averageMagnitudes[b] > maxMag) {
+            maxMag = averageMagnitudes[b];
+            bestBin = b;
+          }
+        }
+      }
+
+      if (maxMag >= minHarmonicStrength) {
+        const actualFreq = binToFreq(bestBin);
+        harmonics.push({ freq: actualFreq, strength: maxMag });
+      }
+    }
+
+    if (harmonics.length >= 2) {
+      return [{
+        fundamental,
+        harmonics,
+        strength: fundamentalMagnitude
+      }];
+    }
+
+    return [];
   };
 
   const drawPlaybackIndicator = (
