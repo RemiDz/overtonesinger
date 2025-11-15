@@ -21,7 +21,8 @@ Perfect for vocal exercises, overtone singing analysis, and understanding harmon
 - **Live scrolling spectrogram**: During recording, new audio appears from the right and scrolls left (like professional audio tools)
 - Fixed 10-second rolling window during live recording for optimal real-time visualization
 - Logarithmic frequency scale for clear octave visualization
-- Frequency scale displayed on left margin (Y-axis) with tick marks for easy frequency reference
+- **Minimum 3kHz spectrum window**: Frequency range automatically adjusts but never displays less than 3000 Hz at the top
+- Frequency scale displayed on left margin (Y-axis) with tick marks and proper spacing to prevent label cutoff
 
 ### Transport Controls
 - **Record**: Start capturing microphone input
@@ -33,6 +34,8 @@ Perfect for vocal exercises, overtone singing analysis, and understanding harmon
 All controls use intuitive icons (like old TV controls) instead of text labels, arranged in a single horizontal line that dynamically adjusts to screen width:
 - **Brightness** (Sun icon): 0-200% overall brightness control for the spectrogram
 - **Sharpness** (Contrast icon): 0-100 peak decluttering to clean up frequencies near overtones
+- **Color Scheme Toggle** (Palette icon): Cycles through Default, Warm, Cool, and Monochrome palettes - **shows in electric blue when at default**
+- **Intensity Scale Toggle** (Activity icon): Cycles through Linear, Logarithmic, and Power curve mapping - **shows in electric blue when at default (Power)**
 - **Advanced Settings**: Collapsible panel with:
   - FFT Window Size: 1024/2048/4096 samples for frequency resolution
   - Frequency Range: Adjustable min (20-1000 Hz) and max (1000-10000 Hz)
@@ -161,6 +164,10 @@ This is a professional audio analysis tool with a modern, sophisticated design i
 
 ## Recent Changes
 
+- 2025-11-15: **Color-coded default toggle icons** - Toggle buttons now show in electric blue when at default selections (Default color scheme, Power intensity scale)
+- 2025-11-15: **Fixed Y-axis label cutoff** - Increased left padding from 32px to 55px to ensure all frequency labels are fully visible
+- 2025-11-15: **Minimum 3kHz spectrum window** - Auto-detection now ensures maximum frequency never drops below 3000 Hz for optimal vocal analysis
+- 2025-11-15: **Optimized anti-aliasing performance** - Cached off-screen canvas in ref to prevent 60fps GC churn
 - 2025-11-15: **Smooth anti-aliased rendering** - Implemented off-screen canvas rendering at 2x resolution with high-quality image smoothing to eliminate pixelation
 - 2025-11-15: **Added donate button** - Heart icon in top-right corner links to PayPal for project support
 - 2025-11-15: **Removed volume slider** - Simplified interface by removing unused volume/gain control
