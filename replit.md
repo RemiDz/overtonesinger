@@ -32,12 +32,9 @@ Perfect for vocal exercises, overtone singing analysis, and understanding harmon
 All controls use intuitive icons (like old TV controls) instead of text labels, arranged in a single horizontal line that dynamically adjusts to screen width:
 - **Brightness** (Sun icon): 0-200% overall brightness control for the spectrogram
 - **Sharpness** (Contrast icon): 0-100 peak decluttering to clean up frequencies near overtones
-- **Advanced Settings**: Collapsible panel with:
-  - FFT Window Size: 1024/2048/4096 samples for frequency resolution
-  - Frequency Range: Adjustable min (20-1000 Hz) and max (1000-10000 Hz)
-  - Color Schemes: Default, Warm, Cool, and Monochrome palettes
-  - Intensity Scaling: Linear, logarithmic, or power curve mapping
-  - Brightness Boost: 25-200% multiplier for overall intensity
+- **Color Scheme** (Palette icon): Toggle between Default, Warm, Cool, and Monochrome color palettes
+- **Intensity Scale** (Activity icon): Toggle between Linear, Logarithmic, and Power curve mapping
+- **FFT Resolution** (Sliders icon): Toggle between 1024, 2048, and 4096 samples for frequency resolution
 
 ### Zoom & Navigation
 - Auto-zoom to fit entire recording when capture stops
@@ -160,6 +157,7 @@ This is a professional audio analysis tool with a modern, sophisticated design i
 
 ## Recent Changes
 
+- 2025-11-15: **Added FFT resolution toggle** - Sliders icon to cycle through 1024, 2048, and 4096 FFT window sizes
 - 2025-11-15: **Added donate button** - Heart icon in top-right corner links to PayPal for project support
 - 2025-11-15: **Removed volume slider** - Simplified interface by removing unused volume/gain control
 - 2025-11-15: **Immediate recording** - Removed 3-second countdown; recording starts immediately when Record button is clicked
