@@ -160,6 +160,8 @@ This is a professional audio analysis tool with a modern, sophisticated design i
 
 ## Recent Changes
 
+- 2025-11-15: **Immediate recording** - Removed 3-second countdown; recording starts immediately when Record button is clicked
+- 2025-11-15: **Monotonic overtone counter** - Overtone count only increases during recording, never decreases (resets on new session)
 - 2025-11-08: **Live scrolling spectrogram** - New audio now appears from the right and scrolls left during recording (10-second rolling window)
 - 2025-11-08: Auto-zoom to fit entire recording when capture stops
 - 2025-11-08: **Major design overhaul** - Implemented modern professional design system inspired by DAW software

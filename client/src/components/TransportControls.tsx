@@ -12,7 +12,6 @@ interface TransportControlsProps {
   onExportPNG?: () => void;
   hasRecording?: boolean;
   disabled?: boolean;
-  isCountingDown?: boolean;
 }
 
 export function TransportControls({
@@ -25,12 +24,11 @@ export function TransportControls({
   onExportPNG,
   hasRecording = false,
   disabled = false,
-  isCountingDown = false,
 }: TransportControlsProps) {
   const isRecording = recordingState === 'recording';
   const isPlaying = recordingState === 'playing';
   const canPlay = recordingState === 'stopped';
-  const canStop = isRecording || isPlaying || isCountingDown;
+  const canStop = isRecording || isPlaying;
 
   return (
     <div className="flex items-center gap-3">
@@ -39,7 +37,7 @@ export function TransportControls({
         size="icon"
         variant={isRecording ? 'default' : 'outline'}
         onClick={onRecord}
-        disabled={disabled || isPlaying || isRecording || isCountingDown}
+        disabled={disabled || isPlaying || isRecording}
         className={`w-10 h-10 rounded-full ${isRecording ? 'animate-pulse' : ''}`}
         aria-label="Record"
         data-testid="button-record"

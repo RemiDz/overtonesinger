@@ -18,11 +18,6 @@ export default function VocalAnalyzer() {
   const [currentTime, setCurrentTime] = useState(0);
   const [playbackTime, setPlaybackTime] = useState(0);
   const [totalDuration, setTotalDuration] = useState(0);
-  const [countdown, setCountdown] = useState<number | null>(null);
-  const isCountdownActiveRef = useRef(false);
-  const shouldAbortRecordingRef = useRef(false);
-  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const countdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const [audioSettings, setAudioSettings] = useState<AudioSettings>({
     microphoneGain: 154,
@@ -136,79 +131,20 @@ export default function VocalAnalyzer() {
     }
   }, [recordingState, spectrogramData]);
 
-  const cancelCountdown = () => {
-    shouldAbortRecordingRef.current = true;
-    if (countdownIntervalRef.current) {
-      clearInterval(countdownIntervalRef.current);
-      countdownIntervalRef.current = null;
-    }
-    if (countdownTimeoutRef.current) {
-      clearTimeout(countdownTimeoutRef.current);
-      countdownTimeoutRef.current = null;
-    }
-    isCountdownActiveRef.current = false;
-    setCountdown(null);
-  };
-
   const handleRecord = async () => {
-    if (isCountdownActiveRef.current) return;
-    
     if (recordingState === 'idle' || recordingState === 'stopped') {
-      isCountdownActiveRef.current = true;
-      shouldAbortRecordingRef.current = false;
-      setCountdown(3);
-      
-      countdownIntervalRef.current = setInterval(() => {
-        setCountdown(prev => {
-          if (prev === null || prev <= 1) {
-            if (countdownIntervalRef.current) {
-              clearInterval(countdownIntervalRef.current);
-              countdownIntervalRef.current = null;
-            }
-            return null;
-          }
-          return prev - 1;
+      try {
+        await startRecording();
+        setRecordingState('recording');
+        setCurrentTime(0);
+        setTotalDuration(0);
+      } catch (err) {
+        toast({
+          variant: 'destructive',
+          title: 'Recording Failed',
+          description: err instanceof Error ? err.message : 'Could not access microphone',
         });
-      }, 1000);
-
-      countdownTimeoutRef.current = setTimeout(async () => {
-        countdownTimeoutRef.current = null;
-        
-        if (shouldAbortRecordingRef.current) {
-          isCountdownActiveRef.current = false;
-          setCountdown(null);
-          return;
-        }
-        
-        try {
-          await startRecording();
-          
-          if (shouldAbortRecordingRef.current) {
-            const duration = stopRecording();
-            setRecordingState('stopped');
-            setTotalDuration(duration);
-            setViewportSettings({
-              zoom: 100,
-              scrollPosition: 0,
-              visibleDuration: duration || 10,
-            });
-          } else {
-            setRecordingState('recording');
-            setCurrentTime(0);
-            setTotalDuration(0);
-          }
-        } catch (err) {
-          toast({
-            variant: 'destructive',
-            title: 'Recording Failed',
-            description: err instanceof Error ? err.message : 'Could not access microphone',
-          });
-        } finally {
-          isCountdownActiveRef.current = false;
-          setCountdown(null);
-          shouldAbortRecordingRef.current = false;
-        }
-      }, 3000);
+      }
     }
   };
 
@@ -227,11 +163,6 @@ export default function VocalAnalyzer() {
   };
 
   const handleStop = () => {
-    if (isCountdownActiveRef.current) {
-      cancelCountdown();
-      return;
-    }
-    
     if (recordingState === 'recording') {
       const duration = stopRecording();
       setRecordingState('stopped');
@@ -249,9 +180,6 @@ export default function VocalAnalyzer() {
   };
 
   const handleReset = () => {
-    if (isCountdownActiveRef.current) {
-      cancelCountdown();
-    }
     reset();
     setRecordingState('idle');
     setCurrentTime(0);
@@ -420,7 +348,6 @@ export default function VocalAnalyzer() {
             onExportPNG={handleExportPNG}
             hasRecording={!!audioBuffer}
             disabled={isProcessing}
-            isCountingDown={isCountdownActiveRef.current || countdown !== null}
           />
           <div className="text-sm font-medium text-muted-foreground">
             {getStatusText()}
@@ -516,15 +443,6 @@ export default function VocalAnalyzer() {
           colorScheme={audioSettings.colorScheme}
           sampleRate={sampleRate}
         />
-        
-        {/* Countdown Overlay */}
-        {countdown !== null && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50">
-            <div className="text-9xl font-bold text-primary animate-pulse" data-testid="text-countdown">
-              {countdown}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Zoom Controls Row */}
