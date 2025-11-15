@@ -473,7 +473,6 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     const detectedHarmonics = detectDominantFrequencies(spectrogramData.frequencies);
     
     detectedHarmonics.forEach(({ fundamental, harmonics, strength }) => {
-      if (strength < 0.3) return;
 
       harmonics.forEach(({ freq, strength: harmonicStrength }, index) => {
         if (freq < minFrequency || freq > maxFrequency) return;
@@ -494,13 +493,11 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
         ctx.lineTo(padding.left + chartWidth, y);
         ctx.stroke();
 
-        if (isFundamental) {
-          ctx.fillStyle = `hsl(${primaryColor} / ${Math.min(0.9, alpha + 0.2)})`;
-          ctx.font = 'bold 11px Inter, sans-serif';
-          ctx.textAlign = 'right';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(`${Math.round(freq)}Hz`, padding.left - 4, y - 2);
-        }
+        ctx.fillStyle = `hsl(${primaryColor} / ${Math.min(0.9, alpha + 0.2)})`;
+        ctx.font = isFundamental ? 'bold 11px Inter, sans-serif' : '10px Inter, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${Math.round(freq)}Hz`, padding.left - 4, y - 2);
       });
     });
 

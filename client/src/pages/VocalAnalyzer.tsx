@@ -81,10 +81,8 @@ export default function VocalAnalyzer() {
       }
 
       if (minDetectedFreq !== Infinity && maxDetectedFreq > 0) {
-        const padding = 0.2;
-        const range = maxDetectedFreq - minDetectedFreq;
-        const newMin = Math.max(60, Math.floor(minDetectedFreq - range * padding));
-        const newMax = Math.min(8000, Math.ceil(maxDetectedFreq + range * padding));
+        const newMin = Math.max(60, Math.floor(minDetectedFreq - 10));
+        const newMax = Math.min(8000, Math.ceil(maxDetectedFreq + 50));
         
         setAudioSettings(prev => ({
           ...prev,
