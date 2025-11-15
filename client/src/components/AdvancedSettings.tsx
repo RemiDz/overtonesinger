@@ -190,27 +190,6 @@ export function AdvancedSettings({
                     {intensityScale === 'power' && 'Balanced visibility'}
                   </p>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="intensity-boost" className="text-sm">
-                    Brightness: {intensityBoost}%
-                  </Label>
-                  <Slider
-                    id="intensity-boost"
-                    value={[intensityBoost]}
-                    onValueChange={(values) => {
-                      const newValue = values[0];
-                      if (newValue !== undefined) {
-                        onIntensityBoostChange(newValue);
-                      }
-                    }}
-                    min={25}
-                    max={200}
-                    step={5}
-                    className="w-full"
-                    data-testid="slider-intensity-boost"
-                  />
-                </div>
               </div>
             </div>
           </div>

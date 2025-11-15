@@ -540,9 +540,9 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
         if (isFundamental) {
           ctx.fillStyle = `hsl(${primaryColor} / ${Math.min(0.9, alpha + 0.2)})`;
           ctx.font = 'bold 11px Inter, sans-serif';
-          ctx.textAlign = 'left';
+          ctx.textAlign = 'right';
           ctx.textBaseline = 'middle';
-          ctx.fillText(`${Math.round(freq)}Hz (F0)`, padding.left + 8, y - 2);
+          ctx.fillText(`${Math.round(freq)}Hz`, padding.left - 4, y - 2);
         }
       });
     });
