@@ -6,7 +6,7 @@ import { ZoomControls } from '@/components/ZoomControls';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useToast } from '@/hooks/use-toast';
 import { exportToWAV, downloadBlob, exportCanvasToPNG } from '@/lib/audioExport';
-import { Sun, Contrast, Palette, Activity, Heart, Sliders } from 'lucide-react';
+import { Sun, Contrast, Palette, Activity, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { RecordingState, AudioSettings, ViewportSettings, IntensityScaleMode, ColorScheme, FFTSize } from '@shared/schema';
@@ -230,13 +230,6 @@ export default function VocalAnalyzer() {
     setAudioSettings(prev => ({ ...prev, intensityScale: scales[nextIndex] }));
   };
 
-  const cycleFFTSize = () => {
-    const sizes: FFTSize[] = [1024, 2048, 4096];
-    const currentIndex = sizes.indexOf(audioSettings.fftSize);
-    const nextIndex = (currentIndex + 1) % sizes.length;
-    setAudioSettings(prev => ({ ...prev, fftSize: sizes[nextIndex] }));
-  };
-
   const getColorSchemeLabel = () => {
     const labels = {
       default: 'Default',
@@ -254,10 +247,6 @@ export default function VocalAnalyzer() {
       power: 'Power'
     };
     return labels[audioSettings.intensityScale];
-  };
-
-  const getFFTSizeLabel = () => {
-    return `${audioSettings.fftSize}`;
   };
 
   const handleZoomChange = (value: number) => {
@@ -435,24 +424,6 @@ export default function VocalAnalyzer() {
               </TooltipTrigger>
               <TooltipContent>
                 <p>Intensity: {getIntensityScaleLabel()}</p>
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={cycleFFTSize}
-                  data-testid="button-fft-size"
-                  className="relative"
-                  disabled={isProcessing || (recordingState !== 'idle' && recordingState !== 'stopped')}
-                >
-                  <Sliders className="h-4 w-4" />
-                  <span className="sr-only">FFT Size: {getFFTSizeLabel()}</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>FFT: {getFFTSizeLabel()}</p>
               </TooltipContent>
             </Tooltip>
           </div>
