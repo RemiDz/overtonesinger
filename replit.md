@@ -29,7 +29,6 @@ Perfect for vocal exercises, overtone singing analysis, and understanding harmon
 
 ### Control Adjustments
 All controls use intuitive icons (like old TV controls) instead of text labels, arranged in a single horizontal line that dynamically adjusts to screen width:
-- **Gain** (Volume icon): 0-200% microphone gain control for input sensitivity
 - **Brightness** (Sun icon): 0-200% overall brightness control for the spectrogram
 - **Sharpness** (Contrast icon): 0-100 peak decluttering to clean up frequencies near overtones
 - **Advanced Settings**: Collapsible panel with:
@@ -110,8 +109,8 @@ Each scheme maps magnitude intensity to color with configurable:
 1. **Grant microphone permission** when prompted
 2. **Click Record** to start capturing audio
 3. **Sing or speak** to see real-time frequency analysis
-4. **Adjust Gain** if input is too quiet or loud
-5. **Use Declutter** to reduce visual noise around peaks
+4. **Adjust Brightness** to make the spectrogram clearer
+5. **Use Sharpness** to reduce visual noise around peaks
 6. **Click Stop** to end recording
 7. **Use Zoom controls** to examine specific portions of the recording
 8. **Click Play** to hear the recorded audio
@@ -160,6 +159,7 @@ This is a professional audio analysis tool with a modern, sophisticated design i
 
 ## Recent Changes
 
+- 2025-11-15: **Removed volume slider** - Simplified interface by removing unused volume/gain control
 - 2025-11-15: **Immediate recording** - Removed 3-second countdown; recording starts immediately when Record button is clicked
 - 2025-11-15: **Monotonic overtone counter** - Overtone count only increases during recording, never decreases (resets on new session)
 - 2025-11-08: **Live scrolling spectrogram** - New audio now appears from the right and scrolls left during recording (10-second rolling window)

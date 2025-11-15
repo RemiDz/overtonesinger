@@ -6,7 +6,7 @@ import { ZoomControls } from '@/components/ZoomControls';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useToast } from '@/hooks/use-toast';
 import { exportToWAV, downloadBlob, exportCanvasToPNG } from '@/lib/audioExport';
-import { Volume2, Sun, Contrast, Palette, Activity } from 'lucide-react';
+import { Sun, Contrast, Palette, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { RecordingState, AudioSettings, ViewportSettings, IntensityScaleMode, ColorScheme, FFTSize } from '@shared/schema';
@@ -20,7 +20,7 @@ export default function VocalAnalyzer() {
   const [totalDuration, setTotalDuration] = useState(0);
   
   const [audioSettings, setAudioSettings] = useState<AudioSettings>({
-    microphoneGain: 154,
+    microphoneGain: 100,
     brightness: 137,
     declutterAmount: 0,
     sampleRate: 48000,
@@ -192,10 +192,6 @@ export default function VocalAnalyzer() {
     });
   };
 
-  const handleGainChange = (value: number) => {
-    setAudioSettings(prev => ({ ...prev, microphoneGain: value }));
-  };
-
   const handleBrightnessChange = (value: number) => {
     setAudioSettings(prev => ({ ...prev, brightness: value }));
   };
@@ -358,15 +354,6 @@ export default function VocalAnalyzer() {
       {/* Settings Controls Row */}
       <div className="flex-none border-b border-border bg-card">
         <div className="flex items-center justify-center px-2 sm:px-4 py-1.5 gap-2 sm:gap-4">
-          <SliderControl
-            icon={Volume2}
-            value={audioSettings.microphoneGain}
-            onChange={handleGainChange}
-            min={0}
-            max={200}
-            className="flex-1 min-w-0 max-w-32"
-            data-testid="slider-gain"
-          />
           <SliderControl
             icon={Sun}
             value={audioSettings.brightness}
