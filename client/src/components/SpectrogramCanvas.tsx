@@ -85,7 +85,6 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     drawGrid(ctx, padding, chartWidth, chartHeight);
     drawAxes(ctx, padding, chartWidth, chartHeight);
     drawSpectrogramData(ctx, padding, chartWidth, chartHeight);
-    drawFrequencyScale(ctx, padding, chartWidth, chartHeight);
     
     if (showFrequencyMarkers) {
       drawFrequencyMarkers(ctx, padding, chartWidth, chartHeight);
