@@ -472,8 +472,9 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
 
     const detectedHarmonics = detectDominantFrequencies(spectrogramData.frequencies);
     
+    const allMarkers: Array<{ freq: number; y: number; isFundamental: boolean; alpha: number }> = [];
+    
     detectedHarmonics.forEach(({ fundamental, harmonics, strength }) => {
-
       harmonics.forEach(({ freq, strength: harmonicStrength }, index) => {
         if (freq < minFrequency || freq > maxFrequency) return;
 
@@ -484,21 +485,37 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
         const isFundamental = index === 0;
         const alpha = Math.min(0.7, harmonicStrength * (isFundamental ? 1.5 : 1.2));
 
-        ctx.strokeStyle = `hsl(${primaryColor} / ${alpha})`;
-        ctx.lineWidth = isFundamental ? 2 : 1.5;
-        ctx.setLineDash(isFundamental ? [8, 4] : [4, 2]);
-
-        ctx.beginPath();
-        ctx.moveTo(padding.left, y);
-        ctx.lineTo(padding.left + chartWidth, y);
-        ctx.stroke();
-
-        ctx.fillStyle = `hsl(${primaryColor} / ${Math.min(0.9, alpha + 0.2)})`;
-        ctx.font = isFundamental ? 'bold 11px Inter, sans-serif' : '10px Inter, sans-serif';
-        ctx.textAlign = 'right';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(`${Math.round(freq)}Hz`, padding.left - 4, y - 2);
+        allMarkers.push({ freq, y, isFundamental, alpha });
       });
+    });
+
+    allMarkers.sort((a, b) => a.y - b.y);
+
+    const filteredMarkers: typeof allMarkers = [];
+    const minLabelDistance = 18;
+
+    allMarkers.forEach(marker => {
+      const tooClose = filteredMarkers.some(existing => Math.abs(existing.y - marker.y) < minLabelDistance);
+      if (!tooClose) {
+        filteredMarkers.push(marker);
+      }
+    });
+
+    filteredMarkers.forEach(({ freq, y, isFundamental, alpha }) => {
+      ctx.strokeStyle = `hsl(${primaryColor} / ${alpha})`;
+      ctx.lineWidth = isFundamental ? 2 : 1.5;
+      ctx.setLineDash(isFundamental ? [8, 4] : [4, 2]);
+
+      ctx.beginPath();
+      ctx.moveTo(padding.left, y);
+      ctx.lineTo(padding.left + chartWidth, y);
+      ctx.stroke();
+
+      ctx.fillStyle = `hsl(${primaryColor} / ${Math.min(0.9, alpha + 0.2)})`;
+      ctx.font = isFundamental ? 'bold 11px Inter, sans-serif' : '10px Inter, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${Math.round(freq)}Hz`, padding.left - 4, y - 2);
     });
 
     ctx.setLineDash([]);
