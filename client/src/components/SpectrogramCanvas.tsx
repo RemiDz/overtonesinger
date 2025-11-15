@@ -236,13 +236,6 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
       ctx.fillText(`${time.toFixed(1)}s`, x, padding.top + chartHeight + 8);
     }
 
-    ctx.save();
-    ctx.translate(16, padding.top + chartHeight / 2);
-    ctx.rotate(-Math.PI / 2);
-    ctx.font = '14px Inter, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Frequency (Hz)', 0, 0);
-    ctx.restore();
   };
 
   const drawFrequencyScale = (
@@ -556,14 +549,14 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
         averageMagnitudes[i] > 0.15
       ) {
         const freq = binToFreq(i);
-        if (freq >= 80 && freq <= 1200) {
+        if (freq >= 60 && freq <= 8000) {
           peaks.push({ bin: i, freq, magnitude: averageMagnitudes[i] });
         }
       }
     }
 
     peaks.sort((a, b) => b.magnitude - a.magnitude);
-    const topPeaks = peaks.slice(0, 3);
+    const topPeaks = peaks.slice(0, 10);
 
     const harmonicSeries: Array<{ fundamental: number; harmonics: Array<{ freq: number; strength: number }>; strength: number }> = [];
 

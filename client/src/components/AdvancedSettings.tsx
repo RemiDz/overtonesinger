@@ -3,7 +3,6 @@ import { Settings, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import type { IntensityScaleMode, ColorScheme, FFTSize } from '@shared/schema';
@@ -11,13 +10,10 @@ import type { IntensityScaleMode, ColorScheme, FFTSize } from '@shared/schema';
 interface AdvancedSettingsProps {
   intensityScale: IntensityScaleMode;
   intensityBoost: number;
-  minFrequency: number;
-  maxFrequency: number;
   fftSize: FFTSize;
   colorScheme: ColorScheme;
   onIntensityScaleChange: (value: IntensityScaleMode) => void;
   onIntensityBoostChange: (value: number) => void;
-  onFrequencyRangeChange: (min: number, max: number) => void;
   onFFTSizeChange: (value: FFTSize) => void;
   onColorSchemeChange: (value: ColorScheme) => void;
 }
@@ -25,13 +21,10 @@ interface AdvancedSettingsProps {
 export function AdvancedSettings({
   intensityScale,
   intensityBoost,
-  minFrequency,
-  maxFrequency,
   fftSize,
   colorScheme,
   onIntensityScaleChange,
   onIntensityBoostChange,
-  onFrequencyRangeChange,
   onFFTSizeChange,
   onColorSchemeChange,
 }: AdvancedSettingsProps) {
@@ -95,48 +88,6 @@ export function AdvancedSettings({
                   <p className="text-xs text-muted-foreground">
                     Higher values provide better frequency resolution
                   </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="min-freq" className="text-sm">
-                    Min Frequency: {minFrequency} Hz
-                  </Label>
-                  <Slider
-                    id="min-freq"
-                    value={[minFrequency]}
-                    onValueChange={(values) => {
-                      const newValue = values[0];
-                      if (newValue !== undefined && newValue < maxFrequency) {
-                        onFrequencyRangeChange(newValue, maxFrequency);
-                      }
-                    }}
-                    min={20}
-                    max={1000}
-                    step={10}
-                    className="w-full"
-                    data-testid="slider-min-frequency"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="max-freq" className="text-sm">
-                    Max Frequency: {maxFrequency} Hz
-                  </Label>
-                  <Slider
-                    id="max-freq"
-                    value={[maxFrequency]}
-                    onValueChange={(values) => {
-                      const newValue = values[0];
-                      if (newValue !== undefined && newValue > minFrequency) {
-                        onFrequencyRangeChange(minFrequency, newValue);
-                      }
-                    }}
-                    min={1000}
-                    max={10000}
-                    step={100}
-                    className="w-full"
-                    data-testid="slider-max-frequency"
-                  />
                 </div>
               </div>
 

@@ -26,8 +26,8 @@ export default function VocalAnalyzer() {
     fftSize: 4096,
     intensityScale: 'power',
     intensityBoost: 100,
-    minFrequency: 50,
-    maxFrequency: 4000,
+    minFrequency: 60,
+    maxFrequency: 8000,
     colorScheme: 'default',
   });
 
@@ -49,6 +49,51 @@ export default function VocalAnalyzer() {
     error,
     sampleRate,
   } = useAudioAnalyzer(audioSettings);
+
+  useEffect(() => {
+    if (spectrogramData && spectrogramData.frequencies.length > 0) {
+      const frequencies = spectrogramData.frequencies;
+      const numBins = frequencies[0].length;
+      const nyquistFreq = sampleRate / 2;
+      const binToFreq = (bin: number) => (bin / numBins) * nyquistFreq;
+
+      const averageMagnitudes = new Float32Array(numBins);
+      frequencies.forEach(frame => {
+        frame.forEach((mag, i) => {
+          averageMagnitudes[i] += mag;
+        });
+      });
+      averageMagnitudes.forEach((_, i) => {
+        averageMagnitudes[i] /= frequencies.length;
+      });
+
+      let minDetectedFreq = Infinity;
+      let maxDetectedFreq = 0;
+
+      for (let i = 0; i < averageMagnitudes.length; i++) {
+        if (averageMagnitudes[i] > 0.1) {
+          const freq = binToFreq(i);
+          if (freq >= 60 && freq <= 8000) {
+            minDetectedFreq = Math.min(minDetectedFreq, freq);
+            maxDetectedFreq = Math.max(maxDetectedFreq, freq);
+          }
+        }
+      }
+
+      if (minDetectedFreq !== Infinity && maxDetectedFreq > 0) {
+        const padding = 0.2;
+        const range = maxDetectedFreq - minDetectedFreq;
+        const newMin = Math.max(60, Math.floor(minDetectedFreq - range * padding));
+        const newMax = Math.min(8000, Math.ceil(maxDetectedFreq + range * padding));
+        
+        setAudioSettings(prev => ({
+          ...prev,
+          minFrequency: newMin,
+          maxFrequency: newMax,
+        }));
+      }
+    }
+  }, [spectrogramData, sampleRate]);
 
   useEffect(() => {
     if (error) {
@@ -166,10 +211,6 @@ export default function VocalAnalyzer() {
 
   const handleIntensityBoostChange = (value: number) => {
     setAudioSettings(prev => ({ ...prev, intensityBoost: value }));
-  };
-
-  const handleFrequencyRangeChange = (min: number, max: number) => {
-    setAudioSettings(prev => ({ ...prev, minFrequency: min, maxFrequency: max }));
   };
 
   const handleFFTSizeChange = (value: FFTSize) => {
@@ -316,13 +357,10 @@ export default function VocalAnalyzer() {
             <AdvancedSettings
               intensityScale={audioSettings.intensityScale}
               intensityBoost={audioSettings.intensityBoost}
-              minFrequency={audioSettings.minFrequency}
-              maxFrequency={audioSettings.maxFrequency}
               fftSize={audioSettings.fftSize}
               colorScheme={audioSettings.colorScheme}
               onIntensityScaleChange={handleIntensityScaleChange}
               onIntensityBoostChange={handleIntensityBoostChange}
-              onFrequencyRangeChange={handleFrequencyRangeChange}
               onFFTSizeChange={handleFFTSizeChange}
               onColorSchemeChange={handleColorSchemeChange}
             />
