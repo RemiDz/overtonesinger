@@ -399,7 +399,7 @@ export default function VocalAnalyzer() {
                   size="icon"
                   onClick={cycleColorScheme}
                   data-testid="button-color-scheme"
-                  className="relative"
+                  className={audioSettings.colorScheme === 'default' ? 'relative text-[#00a8ff] dark:text-[#00a8ff]' : 'relative'}
                 >
                   <Palette className="h-4 w-4" />
                   <span className="sr-only">Color Scheme: {getColorSchemeLabel()}</span>
@@ -416,7 +416,7 @@ export default function VocalAnalyzer() {
                   size="icon"
                   onClick={cycleIntensityScale}
                   data-testid="button-intensity-scale"
-                  className="relative"
+                  className={audioSettings.intensityScale === 'power' ? 'relative text-[#00a8ff] dark:text-[#00a8ff]' : 'relative'}
                 >
                   <Activity className="h-4 w-4" />
                   <span className="sr-only">Intensity Scale: {getIntensityScaleLabel()}</span>
