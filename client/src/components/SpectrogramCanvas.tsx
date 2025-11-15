@@ -78,7 +78,7 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
   }, [spectrogramData, viewportSettings, currentTime, dimensions, brightness, declutterAmount, mousePos, isPlaying, playbackTime, showFrequencyMarkers, intensityScale, intensityBoost, minFrequency, maxFrequency, colorScheme]);
 
   const drawSpectrogram = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    const padding = { top: 12, right: 8, bottom: 24, left: 32 };
+    const padding = { top: 12, right: 8, bottom: 24, left: 55 };
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
 
