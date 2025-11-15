@@ -97,7 +97,15 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     
     if (showFrequencyMarkers) {
       const overtoneCount = drawFrequencyMarkers(ctx, padding, chartWidth, chartHeight) || 0;
-      setCurrentOvertoneCount(overtoneCount);
+      
+      if (isRecording) {
+        if (overtoneCount > currentOvertoneCount) {
+          setCurrentOvertoneCount(overtoneCount);
+        }
+      } else {
+        setCurrentOvertoneCount(overtoneCount);
+      }
+      
       if (overtoneCount > maxOvertoneCount) {
         setMaxOvertoneCount(overtoneCount);
       }
