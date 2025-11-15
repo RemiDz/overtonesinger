@@ -33,6 +33,15 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
   }));
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
+  const [currentOvertoneCount, setCurrentOvertoneCount] = useState(0);
+  const [maxOvertoneCount, setMaxOvertoneCount] = useState(0);
+
+  useEffect(() => {
+    if (!spectrogramData || spectrogramData.frequencies.length === 0) {
+      setCurrentOvertoneCount(0);
+      setMaxOvertoneCount(0);
+    }
+  }, [spectrogramData]);
 
   useEffect(() => {
     const updateDimensions = () => {
@@ -87,8 +96,14 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     drawSpectrogramData(ctx, padding, chartWidth, chartHeight);
     
     if (showFrequencyMarkers) {
-      drawFrequencyMarkers(ctx, padding, chartWidth, chartHeight);
+      const overtoneCount = drawFrequencyMarkers(ctx, padding, chartWidth, chartHeight) || 0;
+      setCurrentOvertoneCount(overtoneCount);
+      if (overtoneCount > maxOvertoneCount) {
+        setMaxOvertoneCount(overtoneCount);
+      }
     }
+    
+    drawOvertoneCounter(ctx, padding, currentOvertoneCount, maxOvertoneCount);
     
     if (isPlaying) {
       drawPlaybackIndicator(ctx, padding, chartWidth, chartHeight);
@@ -519,6 +534,8 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     });
 
     ctx.setLineDash([]);
+    
+    return allMarkers.length;
   };
 
   const detectDominantFrequencies = (frequencies: number[][]): Array<{ fundamental: number; harmonics: Array<{ freq: number; strength: number }>; strength: number }> => {
@@ -655,6 +672,30 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     ctx.lineTo(x + 5, padding.top - 8);
     ctx.closePath();
     ctx.fill();
+  };
+
+  const drawOvertoneCounter = (
+    ctx: CanvasRenderingContext2D,
+    padding: { top: number; right: number; bottom: number; left: number },
+    current: number,
+    max: number
+  ) => {
+    const computedStyle = getComputedStyle(document.documentElement);
+    const primaryColor = computedStyle.getPropertyValue('--primary');
+    const fgColor = computedStyle.getPropertyValue('--foreground');
+    
+    const x = padding.left + 12;
+    const y = padding.top + 18;
+    
+    ctx.fillStyle = `hsl(${primaryColor} / 0.9)`;
+    ctx.font = 'bold 16px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`Overtones: ${current}`, x, y);
+    
+    ctx.fillStyle = `hsl(${fgColor} / 0.7)`;
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText(`Max: ${max}`, x, y + 16);
   };
 
   const drawRecordingIndicator = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
