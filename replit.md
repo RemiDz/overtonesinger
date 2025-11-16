@@ -164,11 +164,12 @@ This is a professional audio analysis tool with a modern, sophisticated design i
 
 ## Recent Changes
 
+- 2025-11-16: **Professional-grade smooth rendering** - Replaced bar rendering with ImageData pixel manipulation using bilinear interpolation in both time and frequency dimensions to completely eliminate pixelation and striping artifacts
+- 2025-11-16: **Magnitude-dependent alpha transparency** - Signal strength now properly conveyed through alpha channel, showing quiet content dimly while keeping background black
+- 2025-11-16: **Optimized performance** - Precomputed decluttered frames and frequency lookups eliminate expensive log/exp operations from inner rendering loop, maintaining 60fps
 - 2025-11-15: **Color-coded default toggle icons** - Toggle buttons now show in electric blue when at default selections (Default color scheme, Power intensity scale)
 - 2025-11-15: **Fixed Y-axis label cutoff** - Increased left padding from 32px to 55px to ensure all frequency labels are fully visible
 - 2025-11-15: **Minimum 3kHz spectrum window** - Auto-detection now ensures maximum frequency never drops below 3000 Hz for optimal vocal analysis
-- 2025-11-15: **Optimized anti-aliasing performance** - Cached off-screen canvas in ref to prevent 60fps GC churn
-- 2025-11-15: **Smooth anti-aliased rendering** - Implemented off-screen canvas rendering at 2x resolution with high-quality image smoothing to eliminate pixelation
 - 2025-11-15: **Added donate button** - Heart icon in top-right corner links to PayPal for project support
 - 2025-11-15: **Removed volume slider** - Simplified interface by removing unused volume/gain control
 - 2025-11-15: **Immediate recording** - Removed 3-second countdown; recording starts immediately when Record button is clicked
