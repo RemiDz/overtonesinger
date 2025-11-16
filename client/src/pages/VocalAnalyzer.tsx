@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { SpectrogramCanvas, type SpectrogramCanvasHandle } from '@/components/SpectrogramCanvas';
-import { FrequencyLabels } from '@/components/FrequencyLabels';
 import { TransportControls } from '@/components/TransportControls';
 import { SliderControl } from '@/components/SliderControl';
 import { ZoomControls } from '@/components/ZoomControls';
@@ -446,11 +445,7 @@ export default function VocalAnalyzer() {
       </div>
 
       {/* Spectrogram Chart - Full Width */}
-      <div className="flex-1 overflow-hidden w-full relative">
-        <FrequencyLabels
-          minFrequency={audioSettings.minFrequency}
-          maxFrequency={audioSettings.maxFrequency}
-        />
+<div className="flex-1 overflow-hidden w-full relative pl-4">
         <SpectrogramCanvas
           ref={spectrogramCanvasRef}
           spectrogramData={spectrogramData}
