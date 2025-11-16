@@ -78,8 +78,47 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     drawSpectrogram(ctx, dimensions.width, dimensions.height);
   }, [spectrogramData, viewportSettings, currentTime, dimensions, brightness, declutterAmount, sharpness, mousePos, isPlaying, playbackTime, showFrequencyMarkers, intensityScale, intensityBoost, minFrequency, maxFrequency, colorScheme]);
 
+  const getAdjustedTimeline = () => {
+    if (!spectrogramData || spectrogramData.frequencies.length === 0) {
+      return { actualStartTime: 0, adjustedDuration: 10, firstNonSilentIndex: 0 };
+    }
+
+    const { frequencies, timeStamps } = spectrogramData;
+    const totalDuration = timeStamps[timeStamps.length - 1] || 1;
+    
+    let firstNonSilentIndex = 0;
+    
+    if (frequencies.length > 0 && frequencies[0].length > 0) {
+      const averageMagnitudes = new Float32Array(frequencies[0].length);
+      for (let i = 0; i < Math.min(10, frequencies.length); i++) {
+        frequencies[i]?.forEach((mag, j) => {
+          averageMagnitudes[j] += mag;
+        });
+      }
+      let maxMagnitude = 0;
+      for (let i = 0; i < averageMagnitudes.length; i++) {
+        maxMagnitude = Math.max(maxMagnitude, averageMagnitudes[i]);
+      }
+      const noiseMagnitude = maxMagnitude / (Math.min(10, frequencies.length) * 10);
+      const silenceThreshold = Math.max(noiseMagnitude * 1.5, 0.001);
+      
+      for (let i = 0; i < frequencies.length; i++) {
+        const hasSignal = frequencies[i]?.some(mag => mag > silenceThreshold);
+        if (hasSignal) {
+          firstNonSilentIndex = i;
+          break;
+        }
+      }
+    }
+    
+    const actualStartTime = timeStamps[firstNonSilentIndex] || 0;
+    const adjustedDuration = totalDuration - actualStartTime;
+    
+    return { actualStartTime, adjustedDuration, firstNonSilentIndex };
+  };
+
   const drawSpectrogram = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    const padding = { top: 12, right: 8, bottom: 24, left: 8 };
+    const padding = { top: 12, right: 8, bottom: 24, left: 60 };
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
 
@@ -252,21 +291,7 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     ctx.textBaseline = 'top';
     const numTimeLabels = 10;
     
-    const totalDuration = spectrogramData?.timeStamps[spectrogramData.timeStamps.length - 1] || 10;
-    const frequencies = spectrogramData?.frequencies || [];
-    
-    let firstNonSilentIndex = 0;
-    const silenceThreshold = 0.01;
-    for (let i = 0; i < Math.min(frequencies.length, 50); i++) {
-      const hasSignal = frequencies[i]?.some(mag => mag > silenceThreshold);
-      if (hasSignal) {
-        firstNonSilentIndex = i;
-        break;
-      }
-    }
-    
-    const actualStartTime = spectrogramData?.timeStamps[firstNonSilentIndex] || 0;
-    const adjustedDuration = totalDuration - actualStartTime;
+    const { actualStartTime, adjustedDuration } = getAdjustedTimeline();
     
     const zoomPercent = Math.max(1, Math.min(100, viewportSettings.zoom));
     const visibleDuration = adjustedDuration * (zoomPercent / 100);
@@ -324,20 +349,7 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     const { frequencies, timeStamps } = spectrogramData;
     if (frequencies.length === 0) return;
 
-    const totalDuration = timeStamps[timeStamps.length - 1] || 1;
-    
-    let firstNonSilentIndex = 0;
-    const silenceThreshold = 0.01;
-    for (let i = 0; i < Math.min(frequencies.length, 50); i++) {
-      const hasSignal = frequencies[i].some(mag => mag > silenceThreshold);
-      if (hasSignal) {
-        firstNonSilentIndex = i;
-        break;
-      }
-    }
-    
-    const actualStartTime = timeStamps[firstNonSilentIndex] || 0;
-    const adjustedDuration = totalDuration - actualStartTime;
+    const { actualStartTime, adjustedDuration } = getAdjustedTimeline();
     
     const zoomPercent = Math.max(1, Math.min(100, viewportSettings.zoom));
     const visibleDuration = adjustedDuration * (zoomPercent / 100);
@@ -699,11 +711,11 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     const binToFreq = (bin: number) => (bin / numBins) * nyquistFreq;
     const freqToBin = (freq: number) => Math.round((freq / nyquistFreq) * numBins);
 
-    const totalDuration = spectrogramData?.timeStamps[spectrogramData.timeStamps.length - 1] || 1;
+    const { actualStartTime, adjustedDuration } = getAdjustedTimeline();
     const zoomPercent = Math.max(1, Math.min(100, viewportSettings.zoom));
-    const visibleDuration = totalDuration * (zoomPercent / 100);
-    const scrollableRange = Math.max(0, totalDuration - visibleDuration);
-    const startTime = viewportSettings.scrollPosition * scrollableRange;
+    const visibleDuration = adjustedDuration * (zoomPercent / 100);
+    const scrollableRange = Math.max(0, adjustedDuration - visibleDuration);
+    const startTime = actualStartTime + (viewportSettings.scrollPosition * scrollableRange);
     const endTime = startTime + visibleDuration;
 
     const visibleFrames = frequencies.filter((_, idx) => {
@@ -800,11 +812,11 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
   ) => {
     if (!spectrogramData) return;
 
-    const totalDuration = spectrogramData.timeStamps[spectrogramData.timeStamps.length - 1] || 1;
+    const { actualStartTime, adjustedDuration } = getAdjustedTimeline();
     const zoomPercent = Math.max(1, Math.min(100, viewportSettings.zoom));
-    const visibleDuration = totalDuration * (zoomPercent / 100);
-    const scrollableRange = Math.max(0, totalDuration - visibleDuration);
-    const startTime = viewportSettings.scrollPosition * scrollableRange;
+    const visibleDuration = adjustedDuration * (zoomPercent / 100);
+    const scrollableRange = Math.max(0, adjustedDuration - visibleDuration);
+    const startTime = actualStartTime + (viewportSettings.scrollPosition * scrollableRange);
     const endTime = startTime + visibleDuration;
 
     if (playbackTime < startTime || playbackTime > endTime) return;
