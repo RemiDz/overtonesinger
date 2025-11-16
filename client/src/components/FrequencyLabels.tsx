@@ -29,34 +29,32 @@ export function FrequencyLabels({ minFrequency, maxFrequency }: FrequencyLabelsP
     const logFreq = Math.log10(Math.max(freq, minFrequency));
     const normalized = (logFreq - logMin) / (logMax - logMin);
     
-    const paddingTopPercent = 1.5;
-    const paddingBottomPercent = 3;
-    const availablePercent = 100 - paddingTopPercent - paddingBottomPercent;
-    
-    return paddingTopPercent + availablePercent * (1 - normalized);
+    return (1 - normalized) * 100;
   };
 
   const freqSteps = generateFreqSteps();
 
   return (
-    <div className="relative w-12 h-full pointer-events-none flex-shrink-0">
-      {freqSteps.map(freq => {
-        const yPercent = freqToYPercent(freq);
-        const label = freq >= 1000 ? `${freq / 1000}k` : freq.toString();
-        
-        return (
-          <div
-            key={freq}
-            className="absolute right-2 text-xs text-foreground font-medium"
-            style={{
-              top: `${yPercent}%`,
-              transform: 'translateY(-50%)',
-            }}
-          >
-            {label}
-          </div>
-        );
-      })}
+    <div className="absolute left-0 top-0 bottom-0 w-7 pointer-events-none z-10">
+      <div className="relative h-full" style={{ paddingTop: '12px', paddingBottom: '24px' }}>
+        {freqSteps.map(freq => {
+          const yPercent = freqToYPercent(freq);
+          const label = freq >= 1000 ? `${freq / 1000}k` : freq.toString();
+          
+          return (
+            <div
+              key={freq}
+              className="absolute right-1 text-[10px] text-foreground font-semibold"
+              style={{
+                top: `${yPercent}%`,
+                transform: 'translateY(-50%)',
+              }}
+            >
+              {label}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

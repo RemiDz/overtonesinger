@@ -446,31 +446,29 @@ export default function VocalAnalyzer() {
       </div>
 
       {/* Spectrogram Chart - Full Width */}
-      <div className="flex-1 overflow-hidden w-full flex">
+      <div className="flex-1 overflow-hidden w-full relative">
         <FrequencyLabels
           minFrequency={audioSettings.minFrequency}
           maxFrequency={audioSettings.maxFrequency}
         />
-        <div className="flex-1 overflow-hidden relative">
-          <SpectrogramCanvas
-            ref={spectrogramCanvasRef}
-            spectrogramData={spectrogramData}
-            viewportSettings={viewportSettings}
-            currentTime={currentTime}
-            isRecording={recordingState === 'recording'}
-            isPlaying={recordingState === 'playing'}
-            playbackTime={playbackTime}
-            brightness={audioSettings.brightness}
-            declutterAmount={audioSettings.declutterAmount}
-            sharpness={audioSettings.sharpness}
-            intensityScale={audioSettings.intensityScale}
-            intensityBoost={audioSettings.intensityBoost}
-            minFrequency={audioSettings.minFrequency}
-            maxFrequency={audioSettings.maxFrequency}
-            colorScheme={audioSettings.colorScheme}
-            sampleRate={sampleRate}
-          />
-        </div>
+        <SpectrogramCanvas
+          ref={spectrogramCanvasRef}
+          spectrogramData={spectrogramData}
+          viewportSettings={viewportSettings}
+          currentTime={currentTime}
+          isRecording={recordingState === 'recording'}
+          isPlaying={recordingState === 'playing'}
+          playbackTime={playbackTime}
+          brightness={audioSettings.brightness}
+          declutterAmount={audioSettings.declutterAmount}
+          sharpness={audioSettings.sharpness}
+          intensityScale={audioSettings.intensityScale}
+          intensityBoost={audioSettings.intensityBoost}
+          minFrequency={audioSettings.minFrequency}
+          maxFrequency={audioSettings.maxFrequency}
+          colorScheme={audioSettings.colorScheme}
+          sampleRate={sampleRate}
+        />
       </div>
 
       {/* Zoom Controls Row */}
