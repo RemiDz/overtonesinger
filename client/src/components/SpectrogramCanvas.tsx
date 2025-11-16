@@ -182,7 +182,7 @@ export const SpectrogramCanvas = forwardRef<
       width: number,
       height: number,
     ) => {
-      const padding = { top: 12, right: 8, bottom: 24, left: 12 };
+      const padding = { top: 12, right: 8, bottom: 24, left: 20 };
       const chartWidth = width - padding.left - padding.right;
       const chartHeight = height - padding.top - padding.bottom;
 

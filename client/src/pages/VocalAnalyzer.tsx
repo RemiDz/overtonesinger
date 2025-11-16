@@ -445,7 +445,7 @@ export default function VocalAnalyzer() {
       </div>
 
       {/* Spectrogram Chart - Full Width */}
-      <div className="flex-1 overflow-hidden w-full relative" style={{ paddingLeft: '18px' }}>
+      <div className="flex-1 overflow-hidden w-full relative">
         <SpectrogramCanvas
           ref={spectrogramCanvasRef}
           spectrogramData={spectrogramData}
