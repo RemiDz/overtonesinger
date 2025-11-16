@@ -165,6 +165,7 @@ This is a professional audio analysis tool with a modern, sophisticated design i
 
 ## Recent Changes
 
+- 2025-11-16: **Hidden overtone counter display** - Commented out drawOvertoneCounter call to hide the "Overtones: X / Max: Y" text overlay while keeping all overtone detection and counting functionality intact
 - 2025-11-16: **Simplified layout with minimal left margin** - Removed frequency scale labels; increased canvas internal left padding to 26px and positioned overtone labels at x=2px (24px left of spectrogram chart area) to accommodate 4-digit frequency numbers; overtone labels now show just the frequency number without "Hz" suffix; canvas has z-10 stacking to ensure full visibility
 - 2025-11-16: **Maximized spectrogram width** - Moved frequency labels outside canvas as absolute-positioned overlay, reducing internal canvas padding from 60px to 12px and gaining 48px of visualization width (later removed frequency labels per user request)
 - 2025-11-16: **Centralized timeline management** - Created `getAdjustedTimeline()` helper function ensuring all rendering features (axes, data, playback indicator, overtone detection) use consistent trimmed timeline, eliminating misalignment between spectrogram and overlays

@@ -220,7 +220,7 @@ export const SpectrogramCanvas = forwardRef<
         }
       }
 
-      drawOvertoneCounter(ctx, padding, currentOvertoneCount, maxOvertoneCount);
+      // drawOvertoneCounter(ctx, padding, currentOvertoneCount, maxOvertoneCount);
 
       if (isPlaying) {
         drawPlaybackIndicator(ctx, padding, chartWidth, chartHeight);
