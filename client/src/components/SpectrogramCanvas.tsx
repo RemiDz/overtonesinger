@@ -694,7 +694,7 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
       ctx.font = isFundamental ? 'bold 11px Inter, sans-serif' : '10px Inter, sans-serif';
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`${Math.round(freq)}Hz`, padding.left - 4, y - 2);
+      ctx.fillText(`${Math.round(freq)}`, padding.left - 4, y - 2);
     });
 
     ctx.setLineDash([]);
