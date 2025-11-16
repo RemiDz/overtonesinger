@@ -24,6 +24,7 @@ export interface AudioSettings {
   microphoneGain: number;   // 0-200%
   brightness: number;       // 0-200%, overall brightness
   declutterAmount: number;  // 0-100
+  sharpness: number;        // 0-100, controls interpolation smoothness
   sampleRate: number;       // 48000 Hz
   fftSize: FFTSize;         // FFT window size
   intensityScale: IntensityScaleMode; // Color intensity scaling

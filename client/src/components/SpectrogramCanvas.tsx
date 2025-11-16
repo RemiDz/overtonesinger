@@ -10,6 +10,7 @@ interface SpectrogramCanvasProps {
   playbackTime?: number;
   brightness?: number;
   declutterAmount: number;
+  sharpness?: number;
   showFrequencyMarkers?: boolean;
   intensityScale?: IntensityScaleMode;
   intensityBoost?: number;
@@ -24,7 +25,7 @@ export interface SpectrogramCanvasHandle {
 }
 
 export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, SpectrogramCanvasProps>(
-  ({ spectrogramData, viewportSettings, currentTime, isRecording, isPlaying = false, playbackTime = 0, brightness = 100, declutterAmount, showFrequencyMarkers = true, intensityScale = 'logarithmic', intensityBoost = 100, minFrequency = 50, maxFrequency = 5000, colorScheme = 'default', sampleRate = 48000 }, ref) => {
+  ({ spectrogramData, viewportSettings, currentTime, isRecording, isPlaying = false, playbackTime = 0, brightness = 100, declutterAmount, sharpness = 50, showFrequencyMarkers = true, intensityScale = 'logarithmic', intensityBoost = 100, minFrequency = 50, maxFrequency = 5000, colorScheme = 'default', sampleRate = 48000 }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -75,10 +76,10 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     ctx.imageSmoothingQuality = 'high';
 
     drawSpectrogram(ctx, dimensions.width, dimensions.height);
-  }, [spectrogramData, viewportSettings, currentTime, dimensions, brightness, declutterAmount, mousePos, isPlaying, playbackTime, showFrequencyMarkers, intensityScale, intensityBoost, minFrequency, maxFrequency, colorScheme]);
+  }, [spectrogramData, viewportSettings, currentTime, dimensions, brightness, declutterAmount, sharpness, mousePos, isPlaying, playbackTime, showFrequencyMarkers, intensityScale, intensityBoost, minFrequency, maxFrequency, colorScheme]);
 
   const drawSpectrogram = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    const padding = { top: 12, right: 8, bottom: 24, left: 55 };
+    const padding = { top: 12, right: 8, bottom: 24, left: 8 };
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
 
@@ -371,12 +372,14 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
       }
     }
 
+    const interpolationStrength = Math.max(0, Math.min(1, 1 - (sharpness / 100)));
+
     for (let x = 0; x < offscreenWidth; x++) {
       const timeProgress = x / offscreenWidth;
       const timeIndexFloat = timeProgress * (visibleIndices.length - 1);
       const timeIndex1 = Math.floor(timeIndexFloat);
       const timeIndex2 = Math.min(timeIndex1 + 1, visibleIndices.length - 1);
-      const timeMix = timeIndexFloat - timeIndex1;
+      const timeMix = (timeIndexFloat - timeIndex1) * interpolationStrength;
 
       const processedMagnitudes1 = processedFrames[timeIndex1];
       const processedMagnitudes2 = processedFrames[timeIndex2];
@@ -398,8 +401,9 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
         const mag2_1 = processedMagnitudes2[lookup.freqBin1] || 0;
         const mag2_2 = processedMagnitudes2[lookup.freqBin2] || 0;
 
-        const mag1 = mag1_1 * (1 - lookup.freqMix) + mag1_2 * lookup.freqMix;
-        const mag2 = mag2_1 * (1 - lookup.freqMix) + mag2_2 * lookup.freqMix;
+        const freqMix = lookup.freqMix * interpolationStrength;
+        const mag1 = mag1_1 * (1 - freqMix) + mag1_2 * freqMix;
+        const mag2 = mag2_1 * (1 - freqMix) + mag2_2 * freqMix;
         const magnitude = mag1 * (1 - timeMix) + mag2 * timeMix;
 
         const scaled = applyIntensityScaling(magnitude);
@@ -417,8 +421,18 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     offscreenCtx.putImageData(imageData, 0, 0);
 
     ctx.save();
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
+    if (sharpness >= 80) {
+      ctx.imageSmoothingEnabled = false;
+    } else {
+      ctx.imageSmoothingEnabled = true;
+      if (sharpness < 33) {
+        ctx.imageSmoothingQuality = 'high';
+      } else if (sharpness < 66) {
+        ctx.imageSmoothingQuality = 'medium';
+      } else {
+        ctx.imageSmoothingQuality = 'low';
+      }
+    }
     ctx.drawImage(
       offscreenCanvas,
       0, 0, offscreenWidth, offscreenHeight,

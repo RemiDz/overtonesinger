@@ -6,7 +6,7 @@ import { ZoomControls } from '@/components/ZoomControls';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useToast } from '@/hooks/use-toast';
 import { exportToWAV, downloadBlob, exportCanvasToPNG } from '@/lib/audioExport';
-import { Sun, Contrast, Palette, Activity, Heart } from 'lucide-react';
+import { Sun, Contrast, Palette, Activity, Heart, Focus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { RecordingState, AudioSettings, ViewportSettings, IntensityScaleMode, ColorScheme, FFTSize } from '@shared/schema';
@@ -23,6 +23,7 @@ export default function VocalAnalyzer() {
     microphoneGain: 100,
     brightness: 137,
     declutterAmount: 0,
+    sharpness: 50,
     sampleRate: 48000,
     fftSize: 4096,
     intensityScale: 'power',
@@ -198,6 +199,10 @@ export default function VocalAnalyzer() {
 
   const handleDeclutterChange = (value: number) => {
     setAudioSettings(prev => ({ ...prev, declutterAmount: value }));
+  };
+
+  const handleSharpnessChange = (value: number) => {
+    setAudioSettings(prev => ({ ...prev, sharpness: value }));
   };
 
   const handleIntensityScaleChange = (value: IntensityScaleMode) => {
@@ -391,6 +396,15 @@ export default function VocalAnalyzer() {
             className="flex-1 min-w-0 max-w-32"
             data-testid="slider-declutter"
           />
+          <SliderControl
+            icon={Focus}
+            value={audioSettings.sharpness}
+            onChange={handleSharpnessChange}
+            min={0}
+            max={100}
+            className="flex-1 min-w-0 max-w-32"
+            data-testid="slider-sharpness"
+          />
           <div className="flex-shrink-0 flex gap-2">
             <Tooltip>
               <TooltipTrigger asChild>
@@ -442,6 +456,7 @@ export default function VocalAnalyzer() {
           playbackTime={playbackTime}
           brightness={audioSettings.brightness}
           declutterAmount={audioSettings.declutterAmount}
+          sharpness={audioSettings.sharpness}
           intensityScale={audioSettings.intensityScale}
           intensityBoost={audioSettings.intensityBoost}
           minFrequency={audioSettings.minFrequency}
