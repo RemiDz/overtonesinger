@@ -692,9 +692,9 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
 
       ctx.fillStyle = `hsl(${primaryColor} / ${Math.min(0.9, alpha + 0.2)})`;
       ctx.font = isFundamental ? 'bold 11px Inter, sans-serif' : '10px Inter, sans-serif';
-      ctx.textAlign = 'right';
+      ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`${Math.round(freq)}`, padding.left - 4, y - 2);
+      ctx.fillText(`${Math.round(freq)}`, 2, y - 2);
     });
 
     ctx.setLineDash([]);
@@ -897,7 +897,7 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
   };
 
   return (
-    <div ref={containerRef} className="w-full h-full bg-background">
+    <div ref={containerRef} className="w-full h-full bg-background relative z-10">
       <canvas
         ref={canvasRef}
         className="w-full h-full cursor-crosshair"
