@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { SpectrogramCanvas, type SpectrogramCanvasHandle } from '@/components/SpectrogramCanvas';
+import { FrequencyLabels } from '@/components/FrequencyLabels';
 import { TransportControls } from '@/components/TransportControls';
 import { SliderControl } from '@/components/SliderControl';
 import { ZoomControls } from '@/components/ZoomControls';
@@ -445,25 +446,31 @@ export default function VocalAnalyzer() {
       </div>
 
       {/* Spectrogram Chart - Full Width */}
-      <div className="flex-1 overflow-hidden w-full relative">
-        <SpectrogramCanvas
-          ref={spectrogramCanvasRef}
-          spectrogramData={spectrogramData}
-          viewportSettings={viewportSettings}
-          currentTime={currentTime}
-          isRecording={recordingState === 'recording'}
-          isPlaying={recordingState === 'playing'}
-          playbackTime={playbackTime}
-          brightness={audioSettings.brightness}
-          declutterAmount={audioSettings.declutterAmount}
-          sharpness={audioSettings.sharpness}
-          intensityScale={audioSettings.intensityScale}
-          intensityBoost={audioSettings.intensityBoost}
+      <div className="flex-1 overflow-hidden w-full flex">
+        <FrequencyLabels
           minFrequency={audioSettings.minFrequency}
           maxFrequency={audioSettings.maxFrequency}
-          colorScheme={audioSettings.colorScheme}
-          sampleRate={sampleRate}
         />
+        <div className="flex-1 overflow-hidden relative">
+          <SpectrogramCanvas
+            ref={spectrogramCanvasRef}
+            spectrogramData={spectrogramData}
+            viewportSettings={viewportSettings}
+            currentTime={currentTime}
+            isRecording={recordingState === 'recording'}
+            isPlaying={recordingState === 'playing'}
+            playbackTime={playbackTime}
+            brightness={audioSettings.brightness}
+            declutterAmount={audioSettings.declutterAmount}
+            sharpness={audioSettings.sharpness}
+            intensityScale={audioSettings.intensityScale}
+            intensityBoost={audioSettings.intensityBoost}
+            minFrequency={audioSettings.minFrequency}
+            maxFrequency={audioSettings.maxFrequency}
+            colorScheme={audioSettings.colorScheme}
+            sampleRate={sampleRate}
+          />
+        </div>
       </div>
 
       {/* Zoom Controls Row */}
