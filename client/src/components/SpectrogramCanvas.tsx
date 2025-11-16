@@ -912,7 +912,7 @@ export const SpectrogramCanvas = forwardRef<
           averageMagnitudes[i] > averageMagnitudes[i + 1] &&
           averageMagnitudes[i] > averageMagnitudes[i - 2] &&
           averageMagnitudes[i] > averageMagnitudes[i + 2] &&
-          averageMagnitudes[i] > 0.15
+          averageMagnitudes[i] > 0.05
         ) {
           const freq = binToFreq(i);
           if (freq >= 60 && freq <= 8000) {
@@ -937,7 +937,7 @@ export const SpectrogramCanvas = forwardRef<
         { freq: fundamental, strength: fundamentalMagnitude },
       ];
 
-      const minHarmonicStrength = fundamentalMagnitude * 0.25;
+      const minHarmonicStrength = fundamentalMagnitude * 0.08;
 
       for (let n = 2; n <= 8; n++) {
         const expectedHarmonic = fundamental * n;
