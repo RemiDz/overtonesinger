@@ -165,8 +165,9 @@ This is a professional audio analysis tool with a modern, sophisticated design i
 
 ## Recent Changes
 
+- 2025-11-16: **Maximized spectrogram width** - Moved frequency labels outside canvas as absolute-positioned overlay, reducing internal canvas padding from 60px to 12px and gaining 48px of visualization width while maintaining label visibility
 - 2025-11-16: **Centralized timeline management** - Created `getAdjustedTimeline()` helper function ensuring all rendering features (axes, data, playback indicator, overtone detection) use consistent trimmed timeline, eliminating misalignment between spectrogram and overlays
-- 2025-11-16: **Enhanced frequency label visibility** - Increased internal canvas padding from 8px to 60px on left side to ensure frequency labels render fully within canvas bounds without cutoff
+- 2025-11-16: **Enhanced frequency label visibility** - Increased internal canvas padding from 8px to 60px on left side to ensure frequency labels render fully within canvas bounds without cutoff (later revised - see above)
 - 2025-11-16: **Improved silence detection** - Removed 2-second time cap and lowered minimum threshold to 0.001, allowing adaptive noise-based detection to handle recordings with any length of initial silence while preserving quiet content
 - 2025-11-16: **Continuous sharpness control** - Added adjustable sharpness slider (0-100) with Focus icon that continuously modulates bilinear interpolation strength for user-controlled smoothness vs. crispness
 - 2025-11-16: **Maximized visualization area** - Reduced internal canvas padding from 55px to 8px on left side, eliminating wasted space while maintaining external frequency labels
