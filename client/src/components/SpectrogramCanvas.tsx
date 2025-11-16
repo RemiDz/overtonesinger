@@ -253,10 +253,25 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     const numTimeLabels = 10;
     
     const totalDuration = spectrogramData?.timeStamps[spectrogramData.timeStamps.length - 1] || 10;
+    const frequencies = spectrogramData?.frequencies || [];
+    
+    let firstNonSilentIndex = 0;
+    const silenceThreshold = 0.01;
+    for (let i = 0; i < Math.min(frequencies.length, 50); i++) {
+      const hasSignal = frequencies[i]?.some(mag => mag > silenceThreshold);
+      if (hasSignal) {
+        firstNonSilentIndex = i;
+        break;
+      }
+    }
+    
+    const actualStartTime = spectrogramData?.timeStamps[firstNonSilentIndex] || 0;
+    const adjustedDuration = totalDuration - actualStartTime;
+    
     const zoomPercent = Math.max(1, Math.min(100, viewportSettings.zoom));
-    const visibleDuration = totalDuration * (zoomPercent / 100);
-    const scrollableRange = Math.max(0, totalDuration - visibleDuration);
-    const startTime = viewportSettings.scrollPosition * scrollableRange;
+    const visibleDuration = adjustedDuration * (zoomPercent / 100);
+    const scrollableRange = Math.max(0, adjustedDuration - visibleDuration);
+    const startTime = actualStartTime + (viewportSettings.scrollPosition * scrollableRange);
     
     for (let i = 0; i <= numTimeLabels; i++) {
       const x = padding.left + (chartWidth * i) / numTimeLabels;
@@ -311,11 +326,24 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
 
     const totalDuration = timeStamps[timeStamps.length - 1] || 1;
     
-    const zoomPercent = Math.max(1, Math.min(100, viewportSettings.zoom));
-    const visibleDuration = totalDuration * (zoomPercent / 100);
+    let firstNonSilentIndex = 0;
+    const silenceThreshold = 0.01;
+    for (let i = 0; i < Math.min(frequencies.length, 50); i++) {
+      const hasSignal = frequencies[i].some(mag => mag > silenceThreshold);
+      if (hasSignal) {
+        firstNonSilentIndex = i;
+        break;
+      }
+    }
     
-    const scrollableRange = Math.max(0, totalDuration - visibleDuration);
-    const startTime = viewportSettings.scrollPosition * scrollableRange;
+    const actualStartTime = timeStamps[firstNonSilentIndex] || 0;
+    const adjustedDuration = totalDuration - actualStartTime;
+    
+    const zoomPercent = Math.max(1, Math.min(100, viewportSettings.zoom));
+    const visibleDuration = adjustedDuration * (zoomPercent / 100);
+    
+    const scrollableRange = Math.max(0, adjustedDuration - visibleDuration);
+    const startTime = actualStartTime + (viewportSettings.scrollPosition * scrollableRange);
     const endTime = startTime + visibleDuration;
 
     const visibleIndices = frequencies
