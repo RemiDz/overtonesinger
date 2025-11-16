@@ -329,53 +329,92 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     }
     
     const offscreenCanvas = offscreenCanvasRef.current;
-    const offscreenWidth = Math.max(chartWidth * 2, visibleIndices.length);
-    const offscreenHeight = chartHeight * 2;
+    const offscreenWidth = chartWidth;
+    const offscreenHeight = chartHeight;
     
     if (offscreenCanvas.width !== offscreenWidth || offscreenCanvas.height !== offscreenHeight) {
       offscreenCanvas.width = offscreenWidth;
       offscreenCanvas.height = offscreenHeight;
     }
     
-    const offscreenCtx = offscreenCanvas.getContext('2d', { alpha: false });
+    const offscreenCtx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
     if (!offscreenCtx) return;
 
     offscreenCtx.fillStyle = '#000000';
     offscreenCtx.fillRect(0, 0, offscreenWidth, offscreenHeight);
 
+    const imageData = offscreenCtx.createImageData(offscreenWidth, offscreenHeight);
+    const pixels = imageData.data;
+
     const declutterThreshold = declutterAmount / 100;
-    const pixelsPerSlice = offscreenWidth / visibleIndices.length;
-    const barWidth = Math.max(1, pixelsPerSlice * 1.2);
+    const nyquistFreq = sampleRate / 2;
 
-    visibleIndices.forEach((timeIndex, sliceIdx) => {
-      const x = sliceIdx * pixelsPerSlice;
+    const processedFrames = visibleIndices.map(idx => 
+      applyDeclutter(frequencies[idx], declutterThreshold)
+    );
 
-      const freqData = frequencies[timeIndex];
-      const processedMagnitudes = applyDeclutter(freqData, declutterThreshold);
+    const rowFreqBinLookup: Array<{ freq: number; freqBin1: number; freqBin2: number; freqMix: number }> = [];
+    const freqDataLength = frequencies[visibleIndices[0]].length;
+    
+    for (let y = 0; y < offscreenHeight; y++) {
+      const yNorm = y / offscreenHeight;
+      const freq = yNormalizedToFreq(yNorm);
       
-      const nyquistFreq = sampleRate / 2;
-
-      for (let freqIndex = 0; freqIndex < processedMagnitudes.length - 1; freqIndex++) {
-        const magnitude = processedMagnitudes[freqIndex];
-        if (magnitude === 0) continue;
-
-        const freq1 = (freqIndex / freqData.length) * nyquistFreq;
-        const freq2 = ((freqIndex + 1) / freqData.length) * nyquistFreq;
-        
-        if (freq1 > maxFrequency || freq2 < minFrequency) continue;
-
-        const y1Norm = freqToYNormalized(Math.max(freq1, minFrequency));
-        const y2Norm = freqToYNormalized(Math.min(freq2, maxFrequency));
-        
-        const y1 = y1Norm * offscreenHeight;
-        const y2 = y2Norm * offscreenHeight;
-        const barHeight = Math.abs(y2 - y1);
-        
-        const color = magnitudeToColor(magnitude);
-        offscreenCtx.fillStyle = color;
-        offscreenCtx.fillRect(x, Math.min(y1, y2), barWidth, Math.max(barHeight, 1.5));
+      if (freq < minFrequency || freq > maxFrequency) {
+        rowFreqBinLookup.push({ freq, freqBin1: -1, freqBin2: -1, freqMix: 0 });
+      } else {
+        const freqBinFloat = (freq / nyquistFreq) * freqDataLength;
+        const freqBin1 = Math.floor(freqBinFloat);
+        const freqBin2 = Math.min(freqBin1 + 1, freqDataLength - 1);
+        const freqMix = freqBinFloat - freqBin1;
+        rowFreqBinLookup.push({ freq, freqBin1, freqBin2, freqMix });
       }
-    });
+    }
+
+    for (let x = 0; x < offscreenWidth; x++) {
+      const timeProgress = x / offscreenWidth;
+      const timeIndexFloat = timeProgress * (visibleIndices.length - 1);
+      const timeIndex1 = Math.floor(timeIndexFloat);
+      const timeIndex2 = Math.min(timeIndex1 + 1, visibleIndices.length - 1);
+      const timeMix = timeIndexFloat - timeIndex1;
+
+      const processedMagnitudes1 = processedFrames[timeIndex1];
+      const processedMagnitudes2 = processedFrames[timeIndex2];
+
+      for (let y = 0; y < offscreenHeight; y++) {
+        const pixelIndex = (y * offscreenWidth + x) * 4;
+        const lookup = rowFreqBinLookup[y];
+
+        if (lookup.freqBin1 === -1) {
+          pixels[pixelIndex] = 0;
+          pixels[pixelIndex + 1] = 0;
+          pixels[pixelIndex + 2] = 0;
+          pixels[pixelIndex + 3] = 255;
+          continue;
+        }
+
+        const mag1_1 = processedMagnitudes1[lookup.freqBin1] || 0;
+        const mag1_2 = processedMagnitudes1[lookup.freqBin2] || 0;
+        const mag2_1 = processedMagnitudes2[lookup.freqBin1] || 0;
+        const mag2_2 = processedMagnitudes2[lookup.freqBin2] || 0;
+
+        const mag1 = mag1_1 * (1 - lookup.freqMix) + mag1_2 * lookup.freqMix;
+        const mag2 = mag2_1 * (1 - lookup.freqMix) + mag2_2 * lookup.freqMix;
+        const magnitude = mag1 * (1 - timeMix) + mag2 * timeMix;
+
+        const scaled = applyIntensityScaling(magnitude);
+        const alpha = Math.floor(Math.max(0, Math.min(1, scaled)) * 255);
+        
+        const color = magnitudeToColorRGBFromScaled(scaled);
+        
+        pixels[pixelIndex] = color.r;
+        pixels[pixelIndex + 1] = color.g;
+        pixels[pixelIndex + 2] = color.b;
+        pixels[pixelIndex + 3] = alpha;
+      }
+    }
+
+    offscreenCtx.putImageData(imageData, 0, 0);
 
     ctx.save();
     ctx.imageSmoothingEnabled = true;
@@ -395,6 +434,14 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     
     const normalizedPosition = (freqLog - minLog) / (maxLog - minLog);
     return 1 - normalizedPosition;
+  };
+
+  const yNormalizedToFreq = (yNorm: number): number => {
+    const minLog = Math.log(minFrequency);
+    const maxLog = Math.log(maxFrequency);
+    const normalizedPosition = 1 - yNorm;
+    const freqLog = minLog + normalizedPosition * (maxLog - minLog);
+    return Math.exp(freqLog);
   };
 
   const applyDeclutter = (magnitudes: number[], threshold: number): number[] => {
@@ -445,55 +492,68 @@ export const SpectrogramCanvas = forwardRef<SpectrogramCanvasHandle, Spectrogram
     return Math.max(0, Math.min(1, scaled * brightnessMultiplier));
   };
 
-  const magnitudeToColor = (magnitude: number): string => {
-    const scaled = applyIntensityScaling(magnitude);
+  const magnitudeToColorRGBFromScaled = (scaled: number): { r: number; g: number; b: number } => {
     const clamped = Math.max(0, Math.min(1, scaled));
     
     switch (colorScheme) {
       case 'warm':
         if (clamped < 0.25) {
           const t = clamped / 0.25;
-          return `rgba(${Math.floor(80 + t * 100)}, ${Math.floor(40 * t)}, 0, ${t * 0.6})`;
+          return { r: Math.floor(80 + t * 100), g: Math.floor(40 * t), b: 0 };
         } else if (clamped < 0.6) {
           const t = (clamped - 0.25) / 0.35;
-          return `rgba(${Math.floor(180 + t * 75)}, ${Math.floor(40 + t * 120)}, 0, ${0.6 + t * 0.3})`;
+          return { r: Math.floor(180 + t * 75), g: Math.floor(40 + t * 120), b: 0 };
         } else {
           const t = (clamped - 0.6) / 0.4;
-          return `rgba(255, ${Math.floor(160 + t * 95)}, ${Math.floor(t * 100)}, ${0.9 + t * 0.1})`;
+          return { r: 255, g: Math.floor(160 + t * 95), b: Math.floor(t * 100) };
         }
       
       case 'cool':
         if (clamped < 0.25) {
           const t = clamped / 0.25;
-          return `rgba(0, ${Math.floor(50 * t)}, ${Math.floor(100 + t * 155)}, ${t * 0.6})`;
+          return { r: 0, g: Math.floor(50 * t), b: Math.floor(100 + t * 155) };
         } else if (clamped < 0.6) {
           const t = (clamped - 0.25) / 0.35;
-          return `rgba(0, ${Math.floor(50 + t * 155)}, ${Math.floor(200 - t * 50)}, ${0.6 + t * 0.3})`;
+          return { r: 0, g: Math.floor(50 + t * 155), b: Math.floor(200 - t * 50) };
         } else {
           const t = (clamped - 0.6) / 0.4;
-          return `rgba(${Math.floor(t * 100)}, ${Math.floor(205 + t * 50)}, ${Math.floor(150 + t * 105)}, ${0.9 + t * 0.1})`;
+          return { r: Math.floor(t * 100), g: Math.floor(205 + t * 50), b: Math.floor(150 + t * 105) };
         }
       
       case 'monochrome':
         const gray = Math.floor(clamped * 255);
-        return `rgba(${gray}, ${gray}, ${gray}, ${clamped * 0.9 + 0.1})`;
+        return { r: gray, g: gray, b: gray };
       
       case 'default':
       default:
         if (clamped < 0.2) {
           const t = clamped / 0.2;
-          return `rgba(0, 0, ${Math.floor(128 + t * 127)}, ${t * 0.5})`;
+          return { r: 0, g: 0, b: Math.floor(128 + t * 127) };
         } else if (clamped < 0.5) {
           const t = (clamped - 0.2) / 0.3;
-          return `rgba(0, ${Math.floor(t * 255)}, 255, ${0.5 + t * 0.3})`;
+          return { r: 0, g: Math.floor(t * 255), b: 255 };
         } else if (clamped < 0.8) {
           const t = (clamped - 0.5) / 0.3;
-          return `rgba(${Math.floor(t * 255)}, 255, ${Math.floor(255 - t * 255)}, ${0.8 + t * 0.15})`;
+          return { r: Math.floor(t * 255), g: 255, b: Math.floor(255 - t * 255) };
         } else {
           const t = (clamped - 0.8) / 0.2;
-          return `rgba(255, ${Math.floor(255 - t * 100)}, 0, ${0.95 + t * 0.05})`;
+          return { r: 255, g: Math.floor(255 - t * 100), b: 0 };
         }
     }
+  };
+
+  const magnitudeToColorRGB = (magnitude: number): { r: number; g: number; b: number } => {
+    const scaled = applyIntensityScaling(magnitude);
+    return magnitudeToColorRGBFromScaled(scaled);
+  };
+
+  const magnitudeToColor = (magnitude: number): string => {
+    const scaled = applyIntensityScaling(magnitude);
+    const color = magnitudeToColorRGBFromScaled(scaled);
+    const clamped = Math.max(0, Math.min(1, scaled));
+    
+    const alpha = clamped * 0.9 + 0.1;
+    return `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`;
   };
 
   const drawCrosshair = (
