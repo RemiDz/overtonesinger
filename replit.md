@@ -17,12 +17,12 @@ Perfect for vocal exercises, overtone singing analysis, and understanding harmon
 - Microphone capture at 48kHz sampling rate
 - Live FFT processing with 2048-sample window
 - 60fps spectrogram rendering using Canvas API
-- **High-quality anti-aliased rendering**: Off-screen canvas at 2x resolution with bilinear interpolation for smooth, professional appearance
+- **Adjustable rendering quality**: Off-screen canvas at 2x resolution with continuous sharpness control from smooth bilinear interpolation to crisp nearest-neighbor sampling
 - **Live scrolling spectrogram**: During recording, new audio appears from the right and scrolls left (like professional audio tools)
 - Fixed 10-second rolling window during live recording for optimal real-time visualization
 - Logarithmic frequency scale for clear octave visualization
 - **Minimum 3kHz spectrum window**: Frequency range automatically adjusts but never displays less than 3000 Hz at the top
-- Frequency scale displayed on left margin (Y-axis) with tick marks and proper spacing to prevent label cutoff
+- Frequency scale displayed on left margin (Y-axis) with tick marks, maximizing spectrogram visualization area
 
 ### Transport Controls
 - **Record**: Start capturing microphone input
@@ -33,7 +33,8 @@ Perfect for vocal exercises, overtone singing analysis, and understanding harmon
 ### Control Adjustments
 All controls use intuitive icons (like old TV controls) instead of text labels, arranged in a single horizontal line that dynamically adjusts to screen width:
 - **Brightness** (Sun icon): 0-200% overall brightness control for the spectrogram
-- **Sharpness** (Contrast icon): 0-100 peak decluttering to clean up frequencies near overtones
+- **Declutter** (Contrast icon): 0-100 peak decluttering to clean up frequencies near overtones
+- **Sharpness** (Focus icon): 0-100 continuous control of interpolation smoothness (0 = smooth/blurry, 100 = sharp/crisp)
 - **Color Scheme Toggle** (Palette icon): Cycles through Default, Warm, Cool, and Monochrome palettes - **shows in electric blue when at default**
 - **Intensity Scale Toggle** (Activity icon): Cycles through Linear, Logarithmic, and Power curve mapping - **shows in electric blue when at default (Power)**
 - **Advanced Settings**: Collapsible panel with:
@@ -164,6 +165,8 @@ This is a professional audio analysis tool with a modern, sophisticated design i
 
 ## Recent Changes
 
+- 2025-11-16: **Continuous sharpness control** - Added adjustable sharpness slider (0-100) with Focus icon that continuously modulates bilinear interpolation strength for user-controlled smoothness vs. crispness
+- 2025-11-16: **Maximized visualization area** - Reduced internal canvas padding from 55px to 8px on left side, eliminating wasted space while maintaining external frequency labels
 - 2025-11-16: **Professional-grade smooth rendering** - Replaced bar rendering with ImageData pixel manipulation using bilinear interpolation in both time and frequency dimensions to completely eliminate pixelation and striping artifacts
 - 2025-11-16: **Magnitude-dependent alpha transparency** - Signal strength now properly conveyed through alpha channel, showing quiet content dimly while keeping background black
 - 2025-11-16: **Optimized performance** - Precomputed decluttered frames and frequency lookups eliminate expensive log/exp operations from inner rendering loop, maintaining 60fps
