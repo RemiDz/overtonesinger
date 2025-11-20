@@ -1,6 +1,7 @@
 export interface VideoExportRecorder {
   audioStreamDestination: MediaStreamAudioDestinationNode;
   recordingPromise: Promise<Blob>;
+  mimeTypeInfo: MimeTypeInfo;
   start: () => void;
   stop: () => void;
   cleanup: () => void;
@@ -26,9 +27,9 @@ export function createVideoExportRecorder(
     ...audioStreamDestination.stream.getAudioTracks()
   ]);
 
-  const mimeType = getSupportedMimeType();
+  const mimeTypeInfo = getSupportedMimeType();
   const mediaRecorder = new MediaRecorder(combinedStream, {
-    mimeType,
+    mimeType: mimeTypeInfo.mimeType,
     videoBitsPerSecond
   });
 
@@ -52,7 +53,7 @@ export function createVideoExportRecorder(
     mediaRecorder.removeEventListener('stop', handleStop);
     mediaRecorder.removeEventListener('error', handleError);
     
-    const videoBlob = new Blob(chunks, { type: mimeType });
+    const videoBlob = new Blob(chunks, { type: mimeTypeInfo.mimeType });
     resolveRecording?.(videoBlob);
   };
 
@@ -71,6 +72,7 @@ export function createVideoExportRecorder(
   return {
     audioStreamDestination,
     recordingPromise,
+    mimeTypeInfo,
     start: () => {
       mediaRecorder.start(100);
     },
@@ -100,25 +102,34 @@ export function createVideoExportRecorder(
   };
 }
 
-function getSupportedMimeType(): string {
+export interface MimeTypeInfo {
+  mimeType: string;
+  isMobileFriendly: boolean;
+  extension: string;
+}
+
+function getSupportedMimeType(): MimeTypeInfo {
   const types = [
-    'video/webm;codecs=vp9,opus',
-    'video/webm;codecs=vp8,opus',
-    'video/webm;codecs=h264,opus',
-    'video/webm',
-    'video/mp4'
+    { mimeType: 'video/mp4;codecs=h264,aac', isMobileFriendly: true, extension: 'mp4' },
+    { mimeType: 'video/mp4;codecs=avc1,mp4a', isMobileFriendly: true, extension: 'mp4' },
+    { mimeType: 'video/mp4', isMobileFriendly: true, extension: 'mp4' },
+    { mimeType: 'video/webm;codecs=h264,opus', isMobileFriendly: false, extension: 'webm' },
+    { mimeType: 'video/webm;codecs=vp8,opus', isMobileFriendly: false, extension: 'webm' },
+    { mimeType: 'video/webm;codecs=vp9,opus', isMobileFriendly: false, extension: 'webm' },
+    { mimeType: 'video/webm', isMobileFriendly: false, extension: 'webm' },
   ];
   
   for (const type of types) {
-    if (MediaRecorder.isTypeSupported(type)) {
+    if (MediaRecorder.isTypeSupported(type.mimeType)) {
       return type;
     }
   }
   
-  return 'video/webm';
+  return { mimeType: 'video/webm', isMobileFriendly: false, extension: 'webm' };
 }
 
-export function downloadVideoBlob(blob: Blob, filename: string = 'spectrogram-recording.webm') {
+export function downloadVideoBlob(blob: Blob, baseFilename: string, extension: string) {
+  const filename = `${baseFilename}.${extension}`;
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

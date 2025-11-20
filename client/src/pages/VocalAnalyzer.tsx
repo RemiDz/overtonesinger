@@ -385,12 +385,21 @@ export default function VocalAnalyzer() {
       const videoBlob = await videoRecorder.recordingPromise;
 
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-      downloadVideoBlob(videoBlob, `spectrogram-${timestamp}.webm`);
+      const baseFilename = `spectrogram-${timestamp}`;
+      downloadVideoBlob(videoBlob, baseFilename, videoRecorder.mimeTypeInfo.extension);
 
-      toast({
-        title: 'Export Successful',
-        description: 'Video file downloaded',
-      });
+      if (videoRecorder.mimeTypeInfo.isMobileFriendly) {
+        toast({
+          title: 'Export Successful',
+          description: `Video file downloaded as ${baseFilename}.${videoRecorder.mimeTypeInfo.extension}`,
+        });
+      } else {
+        toast({
+          title: 'Export Successful',
+          description: `Video saved as ${baseFilename}.${videoRecorder.mimeTypeInfo.extension}. Note: WebM format may not play on mobile devices. Best viewed on desktop browsers.`,
+          duration: 8000,
+        });
+      }
     } catch (err) {
       console.error('Video export error:', err);
       toast({
