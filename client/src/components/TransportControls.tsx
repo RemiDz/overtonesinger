@@ -1,4 +1,4 @@
-import { Circle, Play, Square, Download, Image, RotateCcw } from 'lucide-react';
+import { Circle, Play, Square, Download, Image, RotateCcw, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { RecordingState } from '@shared/schema';
 
@@ -10,8 +10,10 @@ interface TransportControlsProps {
   onReset: () => void;
   onExportWAV?: () => void;
   onExportPNG?: () => void;
+  onExportVideo?: () => void;
   hasRecording?: boolean;
   disabled?: boolean;
+  isExportingVideo?: boolean;
 }
 
 export function TransportControls({
@@ -22,8 +24,10 @@ export function TransportControls({
   onReset,
   onExportWAV,
   onExportPNG,
+  onExportVideo,
   hasRecording = false,
   disabled = false,
+  isExportingVideo = false,
 }: TransportControlsProps) {
   const isRecording = recordingState === 'recording';
   const isPlaying = recordingState === 'playing';
@@ -110,6 +114,18 @@ export function TransportControls({
             data-testid="button-export-png"
           >
             <Image className="h-5 w-5" />
+          </Button>
+
+          <Button
+            size="icon"
+            variant="outline"
+            onClick={onExportVideo}
+            disabled={disabled || isRecording || isPlaying || isExportingVideo}
+            className="w-10 h-10 rounded-full"
+            aria-label="Export Video"
+            data-testid="button-export-video"
+          >
+            <Video className="h-5 w-5" />
           </Button>
         </>
       )}
