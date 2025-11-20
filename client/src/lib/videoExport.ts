@@ -1,38 +1,29 @@
+export interface VideoExportRecorder {
+  audioStreamDestination: MediaStreamAudioDestinationNode;
+  recordingPromise: Promise<Blob>;
+  start: () => void;
+  stop: () => void;
+  cleanup: () => void;
+}
+
 export interface VideoExportOptions {
   canvas: HTMLCanvasElement;
-  audioBlob: Blob;
-  duration: number;
+  audioContext: AudioContext;
   fps?: number;
   videoBitsPerSecond?: number;
 }
 
-export interface VideoExportProgress {
-  stage: 'preparing' | 'recording' | 'processing' | 'complete';
-  progress: number;
-}
-
-export async function exportSpectrogramVideo(
-  options: VideoExportOptions,
-  onProgress?: (progress: VideoExportProgress) => void
-): Promise<Blob> {
-  const { canvas, audioBlob, duration, fps = 30, videoBitsPerSecond = 2500000 } = options;
-
-  onProgress?.({ stage: 'preparing', progress: 0 });
+export function createVideoExportRecorder(
+  options: VideoExportOptions
+): VideoExportRecorder {
+  const { canvas, audioContext, fps = 30, videoBitsPerSecond = 2500000 } = options;
 
   const canvasStream = canvas.captureStream(fps);
-  
-  const audioContext = new AudioContext();
-  const audioArrayBuffer = await audioBlob.arrayBuffer();
-  const audioBuffer = await audioContext.decodeAudioData(audioArrayBuffer);
-  
-  const mediaStreamDestination = audioContext.createMediaStreamDestination();
-  const audioSource = audioContext.createBufferSource();
-  audioSource.buffer = audioBuffer;
-  audioSource.connect(mediaStreamDestination);
+  const audioStreamDestination = audioContext.createMediaStreamDestination();
   
   const combinedStream = new MediaStream([
     ...canvasStream.getVideoTracks(),
-    ...mediaStreamDestination.stream.getAudioTracks()
+    ...audioStreamDestination.stream.getAudioTracks()
   ]);
 
   const mimeType = getSupportedMimeType();
@@ -42,53 +33,71 @@ export async function exportSpectrogramVideo(
   });
 
   const chunks: Blob[] = [];
-  
-  return new Promise((resolve, reject) => {
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        chunks.push(event.data);
-      }
-    };
+  let resolveRecording: ((blob: Blob) => void) | null = null;
+  let rejectRecording: ((error: Error) => void) | null = null;
 
-    mediaRecorder.onstop = () => {
-      onProgress?.({ stage: 'processing', progress: 90 });
-      
-      const videoBlob = new Blob(chunks, { type: mimeType });
-      
-      audioContext.close();
-      
-      onProgress?.({ stage: 'complete', progress: 100 });
-      resolve(videoBlob);
-    };
-
-    mediaRecorder.onerror = (event) => {
-      audioContext.close();
-      reject(new Error('MediaRecorder error: ' + event));
-    };
-
-    onProgress?.({ stage: 'recording', progress: 10 });
-    
-    mediaRecorder.start(100);
-    audioSource.start(0);
-    
-    const startTime = performance.now();
-    const checkProgress = () => {
-      const elapsed = (performance.now() - startTime) / 1000;
-      const progress = Math.min(80, 10 + (elapsed / duration) * 70);
-      onProgress?.({ stage: 'recording', progress });
-      
-      if (elapsed < duration) {
-        requestAnimationFrame(checkProgress);
-      }
-    };
-    checkProgress();
-    
-    setTimeout(() => {
-      mediaRecorder.stop();
-      audioSource.stop();
-      canvasStream.getTracks().forEach(track => track.stop());
-    }, duration * 1000 + 100);
+  const recordingPromise = new Promise<Blob>((resolve, reject) => {
+    resolveRecording = resolve;
+    rejectRecording = reject;
   });
+
+  const handleDataAvailable = (event: BlobEvent) => {
+    if (event.data.size > 0) {
+      chunks.push(event.data);
+    }
+  };
+
+  const handleStop = () => {
+    mediaRecorder.removeEventListener('dataavailable', handleDataAvailable);
+    mediaRecorder.removeEventListener('stop', handleStop);
+    mediaRecorder.removeEventListener('error', handleError);
+    
+    const videoBlob = new Blob(chunks, { type: mimeType });
+    resolveRecording?.(videoBlob);
+  };
+
+  const handleError = (event: Event) => {
+    mediaRecorder.removeEventListener('dataavailable', handleDataAvailable);
+    mediaRecorder.removeEventListener('stop', handleStop);
+    mediaRecorder.removeEventListener('error', handleError);
+    
+    rejectRecording?.(new Error('MediaRecorder error: ' + (event as any).error?.message || 'Unknown error'));
+  };
+
+  mediaRecorder.addEventListener('dataavailable', handleDataAvailable);
+  mediaRecorder.addEventListener('stop', handleStop);
+  mediaRecorder.addEventListener('error', handleError);
+
+  return {
+    audioStreamDestination,
+    recordingPromise,
+    start: () => {
+      mediaRecorder.start(100);
+    },
+    stop: () => {
+      try {
+        if (mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop();
+        }
+      } catch (err) {
+        rejectRecording?.(err as Error);
+      }
+    },
+    cleanup: () => {
+      try {
+        if (mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop();
+        }
+        mediaRecorder.removeEventListener('dataavailable', handleDataAvailable);
+        mediaRecorder.removeEventListener('stop', handleStop);
+        mediaRecorder.removeEventListener('error', handleError);
+        audioStreamDestination.disconnect();
+        canvasStream.getTracks().forEach(track => track.stop());
+      } catch (err) {
+        console.error('Cleanup error:', err);
+      }
+    }
+  };
 }
 
 function getSupportedMimeType(): string {

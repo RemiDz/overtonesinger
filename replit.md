@@ -51,9 +51,15 @@ The application is built as a single-page application primarily utilizing client
 
 - **Web Audio API**: For microphone input and real-time FFT analysis.
 - **Canvas API**: For high-performance spectrogram rendering.
+- **MediaRecorder API**: For video export functionality combining audio with spectrogram visualization.
 - **React**: Frontend JavaScript library.
 - **TypeScript**: Superset of JavaScript for type-safe code.
 - **Tailwind CSS**: Utility-first CSS framework for responsive design.
 - **Shadcn UI**: UI component library.
 - **Express.js**: Minimal backend framework for serving the application.
 - **PayPal**: Integrated for project donations (via a "Donate" button).
+
+## Recent Changes
+
+- 2025-11-20: **Video export feature** - Added Export Video button to export synchronized spectrogram visualization with audio as .webm file; uses MediaRecorder API with canvas.captureStream() at 30 fps; modified useAudioAnalyzer hook to support MediaStreamDestination for synchronized audio-video recording via shared AudioBufferSourceNode
+- 2025-11-16: **Enhanced overtone detection sensitivity** - Lowered peak detection threshold from 0.15 to 0.05 and harmonic strength requirement from 25% to 8% of fundamental to detect and display blue labels for all visible overtones including weaker higher frequencies

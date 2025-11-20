@@ -6,7 +6,7 @@ import { ZoomControls } from '@/components/ZoomControls';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useToast } from '@/hooks/use-toast';
 import { exportToWAV, downloadBlob, exportCanvasToPNG } from '@/lib/audioExport';
-import { exportSpectrogramVideo, downloadVideoBlob } from '@/lib/videoExport';
+import { createVideoExportRecorder, downloadVideoBlob } from '@/lib/videoExport';
 import { Sun, Contrast, Palette, Activity, Heart, Focus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -52,6 +52,7 @@ export default function VocalAnalyzer() {
     isProcessing,
     error,
     sampleRate,
+    audioContext,
   } = useAudioAnalyzer(audioSettings);
 
   useEffect(() => {
@@ -328,7 +329,7 @@ export default function VocalAnalyzer() {
 
   const handleExportVideo = async () => {
     const canvas = spectrogramCanvasRef.current?.getCanvas();
-    if (!canvas || !audioBuffer) {
+    if (!canvas || !audioBuffer || !audioContext) {
       toast({
         variant: 'destructive',
         title: 'Export Failed',
@@ -338,53 +339,50 @@ export default function VocalAnalyzer() {
     }
 
     setIsExportingVideo(true);
+    let videoRecorder: ReturnType<typeof createVideoExportRecorder> | null = null;
     
     try {
-      const wavBlob = exportToWAV(audioBuffer, sampleRate);
-      const duration = audioBuffer.length / sampleRate;
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
 
       toast({
-        title: 'Preparing Export',
-        description: 'Starting video playback and recording...',
+        title: 'Exporting Video',
+        description: 'Recording video with synchronized audio...',
       });
+
+      videoRecorder = createVideoExportRecorder({
+        canvas,
+        audioContext,
+        fps: 30,
+        videoBitsPerSecond: 2500000,
+      });
+
+      videoRecorder.start();
 
       setRecordingState('playing');
       setPlaybackTime(0);
 
-      playRecording(
-        (time) => setPlaybackTime(time),
-        async () => {
-          setRecordingState('stopped');
-          setPlaybackTime(0);
-        }
-      );
+      const playbackPromise = new Promise<void>((resolve) => {
+        playRecording(
+          (time) => setPlaybackTime(time),
+          () => {
+            setRecordingState('stopped');
+            setPlaybackTime(0);
+            resolve();
+          },
+          videoRecorder!.audioStreamDestination
+        );
+      });
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await Promise.race([
+        playbackPromise.then(() => videoRecorder!.stop()),
+        videoRecorder.recordingPromise.then(() => {
+          throw new Error('Recording stopped unexpectedly before playback completed');
+        }),
+      ]);
 
-      const videoBlob = await exportSpectrogramVideo(
-        {
-          canvas,
-          audioBlob: wavBlob,
-          duration,
-          fps: 30,
-          videoBitsPerSecond: 2500000,
-        },
-        (progress) => {
-          const stageMessages = {
-            preparing: 'Preparing video...',
-            recording: `Recording video... ${Math.round(progress.progress)}%`,
-            processing: 'Processing video...',
-            complete: 'Video ready!',
-          };
-          
-          if (progress.stage !== 'complete') {
-            toast({
-              title: 'Exporting Video',
-              description: stageMessages[progress.stage],
-            });
-          }
-        }
-      );
+      const videoBlob = await videoRecorder.recordingPromise;
 
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
       downloadVideoBlob(videoBlob, `spectrogram-${timestamp}.webm`);
@@ -401,6 +399,9 @@ export default function VocalAnalyzer() {
         description: 'Could not export video file',
       });
     } finally {
+      if (videoRecorder) {
+        videoRecorder.cleanup();
+      }
       setIsExportingVideo(false);
       if (recordingState === 'playing') {
         stopPlayback();

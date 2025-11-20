@@ -165,7 +165,11 @@ export function useAudioAnalyzer(settings: AudioSettings) {
     return duration;
   }, []);
 
-  const playRecording = useCallback((onPlaybackUpdate?: (currentTime: number) => void, onPlaybackEnd?: () => void) => {
+  const playRecording = useCallback((
+    onPlaybackUpdate?: (currentTime: number) => void, 
+    onPlaybackEnd?: () => void,
+    audioStreamDestination?: MediaStreamAudioDestinationNode
+  ) => {
     if (!audioBuffer || !audioContextRef.current) return;
 
     try {
@@ -181,6 +185,10 @@ export function useAudioAnalyzer(settings: AudioSettings) {
       const source = audioContext.createBufferSource();
       source.buffer = audioBufferData;
       source.connect(audioContext.destination);
+      
+      if (audioStreamDestination) {
+        source.connect(audioStreamDestination);
+      }
       
       const playbackStartTime = audioContext.currentTime;
       const duration = audioBuffer.length / settings.sampleRate;
@@ -246,5 +254,6 @@ export function useAudioAnalyzer(settings: AudioSettings) {
     isProcessing,
     error,
     sampleRate: settings.sampleRate,
+    audioContext: audioContextRef.current,
   };
 }
