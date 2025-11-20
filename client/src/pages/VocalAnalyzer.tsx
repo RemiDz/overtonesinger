@@ -6,6 +6,7 @@ import { ZoomControls } from '@/components/ZoomControls';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useToast } from '@/hooks/use-toast';
 import { exportToWAV, downloadBlob, exportCanvasToPNG } from '@/lib/audioExport';
+import { exportSpectrogramVideo, downloadVideoBlob } from '@/lib/videoExport';
 import { Sun, Contrast, Palette, Activity, Heart, Focus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -18,6 +19,7 @@ export default function VocalAnalyzer() {
   const [currentTime, setCurrentTime] = useState(0);
   const [playbackTime, setPlaybackTime] = useState(0);
   const [totalDuration, setTotalDuration] = useState(0);
+  const [isExportingVideo, setIsExportingVideo] = useState(false);
   
   const [audioSettings, setAudioSettings] = useState<AudioSettings>({
     microphoneGain: 100,
@@ -324,6 +326,90 @@ export default function VocalAnalyzer() {
     }
   };
 
+  const handleExportVideo = async () => {
+    const canvas = spectrogramCanvasRef.current?.getCanvas();
+    if (!canvas || !audioBuffer) {
+      toast({
+        variant: 'destructive',
+        title: 'Export Failed',
+        description: 'No recording or canvas available',
+      });
+      return;
+    }
+
+    setIsExportingVideo(true);
+    
+    try {
+      const wavBlob = exportToWAV(audioBuffer, sampleRate);
+      const duration = audioBuffer.length / sampleRate;
+
+      toast({
+        title: 'Preparing Export',
+        description: 'Starting video playback and recording...',
+      });
+
+      setRecordingState('playing');
+      setPlaybackTime(0);
+
+      playRecording(
+        (time) => setPlaybackTime(time),
+        async () => {
+          setRecordingState('stopped');
+          setPlaybackTime(0);
+        }
+      );
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const videoBlob = await exportSpectrogramVideo(
+        {
+          canvas,
+          audioBlob: wavBlob,
+          duration,
+          fps: 30,
+          videoBitsPerSecond: 2500000,
+        },
+        (progress) => {
+          const stageMessages = {
+            preparing: 'Preparing video...',
+            recording: `Recording video... ${Math.round(progress.progress)}%`,
+            processing: 'Processing video...',
+            complete: 'Video ready!',
+          };
+          
+          if (progress.stage !== 'complete') {
+            toast({
+              title: 'Exporting Video',
+              description: stageMessages[progress.stage],
+            });
+          }
+        }
+      );
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      downloadVideoBlob(videoBlob, `spectrogram-${timestamp}.webm`);
+
+      toast({
+        title: 'Export Successful',
+        description: 'Video file downloaded',
+      });
+    } catch (err) {
+      console.error('Video export error:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Export Failed',
+        description: 'Could not export video file',
+      });
+    } finally {
+      setIsExportingVideo(false);
+      if (recordingState === 'playing') {
+        stopPlayback();
+        setRecordingState('stopped');
+        setPlaybackTime(0);
+      }
+    }
+  };
+
   const getStatusText = () => {
     if (isProcessing) return 'Processing...';
     switch (recordingState) {
@@ -347,8 +433,10 @@ export default function VocalAnalyzer() {
             onReset={handleReset}
             onExportWAV={handleExportWAV}
             onExportPNG={handleExportPNG}
+            onExportVideo={handleExportVideo}
             hasRecording={!!audioBuffer}
             disabled={isProcessing}
+            isExportingVideo={isExportingVideo}
           />
           <div className="flex items-center gap-2 sm:gap-4">
             <div className="text-sm font-medium text-muted-foreground">
