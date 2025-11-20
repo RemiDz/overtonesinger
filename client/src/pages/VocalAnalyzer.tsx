@@ -7,6 +7,7 @@ import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useToast } from '@/hooks/use-toast';
 import { exportToWAV, downloadBlob, exportCanvasToPNG } from '@/lib/audioExport';
 import { createVideoExportRecorder, downloadVideoBlob } from '@/lib/videoExport';
+import { convertWebMToMP4 } from '@/lib/ffmpegConverter';
 import { Sun, Contrast, Palette, Activity, Heart, Focus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -20,6 +21,7 @@ export default function VocalAnalyzer() {
   const [playbackTime, setPlaybackTime] = useState(0);
   const [totalDuration, setTotalDuration] = useState(0);
   const [isExportingVideo, setIsExportingVideo] = useState(false);
+  const [conversionProgress, setConversionProgress] = useState(0);
   
   const [audioSettings, setAudioSettings] = useState<AudioSettings>({
     microphoneGain: 100,
@@ -382,24 +384,28 @@ export default function VocalAnalyzer() {
         }),
       ]);
 
-      const videoBlob = await videoRecorder.recordingPromise;
+      const webmBlob = await videoRecorder.recordingPromise;
+
+      toast({
+        title: 'Converting to MP4',
+        description: 'Converting video for mobile compatibility...',
+      });
+
+      setConversionProgress(0);
+      const mp4Blob = await convertWebMToMP4(webmBlob, {
+        onProgress: (progress) => {
+          setConversionProgress(progress);
+        },
+      });
 
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
       const baseFilename = `spectrogram-${timestamp}`;
-      downloadVideoBlob(videoBlob, baseFilename, videoRecorder.mimeTypeInfo.extension);
+      downloadVideoBlob(mp4Blob, baseFilename, 'mp4');
 
-      if (videoRecorder.mimeTypeInfo.isMobileFriendly) {
-        toast({
-          title: 'Export Successful',
-          description: `Video file downloaded as ${baseFilename}.${videoRecorder.mimeTypeInfo.extension}`,
-        });
-      } else {
-        toast({
-          title: 'Export Successful',
-          description: `Video saved as ${baseFilename}.${videoRecorder.mimeTypeInfo.extension}. Note: WebM format may not play on mobile devices. Best viewed on desktop browsers.`,
-          duration: 8000,
-        });
-      }
+      toast({
+        title: 'Export Successful',
+        description: `Video downloaded as ${baseFilename}.mp4 (mobile-friendly format)`,
+      });
     } catch (err) {
       console.error('Video export error:', err);
       toast({
