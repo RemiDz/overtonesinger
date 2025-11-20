@@ -3,10 +3,24 @@ import { fetchFile, toBlobURL } from '@ffmpeg/util';
 
 let ffmpegInstance: FFmpeg | null = null;
 let isFFmpegLoaded = false;
+let ffmpegLoadFailed = false;
+
+export function isFFmpegAvailable(): boolean {
+  return typeof SharedArrayBuffer !== 'undefined';
+}
 
 export async function loadFFmpeg(onProgress?: (progress: number) => void): Promise<FFmpeg> {
   if (ffmpegInstance && isFFmpegLoaded) {
     return ffmpegInstance;
+  }
+
+  if (ffmpegLoadFailed) {
+    throw new Error('FFmpeg previously failed to load');
+  }
+
+  if (!isFFmpegAvailable()) {
+    ffmpegLoadFailed = true;
+    throw new Error('SharedArrayBuffer is not available. Video conversion requires cross-origin isolation.');
   }
 
   ffmpegInstance = new FFmpeg();
@@ -23,13 +37,19 @@ export async function loadFFmpeg(onProgress?: (progress: number) => void): Promi
 
   const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
   
-  await ffmpegInstance.load({
-    coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-    wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-  });
+  try {
+    await ffmpegInstance.load({
+      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+    });
 
-  isFFmpegLoaded = true;
-  return ffmpegInstance;
+    isFFmpegLoaded = true;
+    return ffmpegInstance;
+  } catch (error) {
+    console.error('Failed to load FFmpeg:', error);
+    ffmpegLoadFailed = true;
+    throw new Error('Failed to load video conversion library from CDN');
+  }
 }
 
 export interface ConversionOptions {

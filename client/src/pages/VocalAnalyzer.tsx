@@ -7,7 +7,7 @@ import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useToast } from '@/hooks/use-toast';
 import { exportToWAV, downloadBlob, exportCanvasToPNG } from '@/lib/audioExport';
 import { createVideoExportRecorder, downloadVideoBlob } from '@/lib/videoExport';
-import { convertWebMToMP4 } from '@/lib/ffmpegConverter';
+import { convertWebMToMP4, isFFmpegAvailable } from '@/lib/ffmpegConverter';
 import { Sun, Contrast, Palette, Activity, Heart, Focus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -386,26 +386,50 @@ export default function VocalAnalyzer() {
 
       const webmBlob = await videoRecorder.recordingPromise;
 
-      toast({
-        title: 'Converting to MP4',
-        description: 'Converting video for mobile compatibility...',
-      });
-
-      setConversionProgress(0);
-      const mp4Blob = await convertWebMToMP4(webmBlob, {
-        onProgress: (progress) => {
-          setConversionProgress(progress);
-        },
-      });
-
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
       const baseFilename = `spectrogram-${timestamp}`;
-      downloadVideoBlob(mp4Blob, baseFilename, 'mp4');
 
-      toast({
-        title: 'Export Successful',
-        description: `Video downloaded as ${baseFilename}.mp4 (mobile-friendly format)`,
-      });
+      if (!isFFmpegAvailable()) {
+        downloadVideoBlob(webmBlob, baseFilename, 'webm');
+        
+        toast({
+          title: 'Video Export (WebM)',
+          description: `Downloaded as ${baseFilename}.webm. MP4 conversion unavailable (requires modern browser with SharedArrayBuffer support). WebM may not play on mobile devices.`,
+          duration: 10000,
+        });
+        return;
+      }
+
+      try {
+        toast({
+          title: 'Converting to MP4',
+          description: 'Converting video for mobile compatibility...',
+        });
+
+        setConversionProgress(0);
+        const mp4Blob = await convertWebMToMP4(webmBlob, {
+          onProgress: (progress) => {
+            setConversionProgress(progress);
+          },
+        });
+
+        downloadVideoBlob(mp4Blob, baseFilename, 'mp4');
+
+        toast({
+          title: 'Export Successful',
+          description: `Video downloaded as ${baseFilename}.mp4 (mobile-friendly format)`,
+        });
+      } catch (conversionError) {
+        console.error('Video conversion failed:', conversionError);
+        
+        downloadVideoBlob(webmBlob, baseFilename, 'webm');
+        
+        toast({
+          title: 'Video Export (WebM)',
+          description: `Downloaded as ${baseFilename}.webm. MP4 conversion failed. WebM may not play on mobile devices.`,
+          duration: 8000,
+        });
+      }
     } catch (err) {
       console.error('Video export error:', err);
       toast({

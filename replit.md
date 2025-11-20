@@ -61,5 +61,10 @@ The application is built as a single-page application primarily utilizing client
 
 ## Recent Changes
 
-- 2025-11-20: **Video export feature** - Added Export Video button to export synchronized spectrogram visualization with audio as .webm file; uses MediaRecorder API with canvas.captureStream() at 30 fps; modified useAudioAnalyzer hook to support MediaStreamDestination for synchronized audio-video recording via shared AudioBufferSourceNode
+- 2025-11-20: **Video export with mobile compatibility attempt** - Added Export Video button that records synchronized spectrogram + audio; attempts to convert WebM to MP4 using FFmpeg.wasm for mobile compatibility, but falls back to WebM if conversion unavailable (requires SharedArrayBuffer support); includes proper error handling and user notifications about format limitations
+- 2025-11-20: **Video export feature** - Added Export Video button to export synchronized spectrogram visualization with audio; uses MediaRecorder API with canvas.captureStream() at 30 fps; modified useAudioAnalyzer hook to support MediaStreamDestination for synchronized audio-video recording via shared AudioBufferSourceNode
 - 2025-11-16: **Enhanced overtone detection sensitivity** - Lowered peak detection threshold from 0.15 to 0.05 and harmonic strength requirement from 25% to 8% of fundamental to detect and display blue labels for all visible overtones including weaker higher frequencies
+
+## Known Limitations
+
+- **Video format compatibility**: The app exports videos using browser's MediaRecorder API which produces WebM format. While the app includes FFmpeg.wasm to convert to MP4 for better mobile compatibility, this conversion requires SharedArrayBuffer support and proper cross-origin isolation headers. In environments where this is unavailable, videos are exported as WebM which may not play on iOS devices or some mobile browsers. Users are clearly notified of the format and compatibility when exporting.
