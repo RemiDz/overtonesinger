@@ -3,14 +3,12 @@ node_modules/
 
 # Build outputs
 dist/
-server/public/
 
 # IDE and editor files
 .idea/
 .vscode/
 *.swp
 *.swo
-*~
 
 # OS files
 .DS_Store
@@ -19,24 +17,9 @@ Thumbs.db
 # Environment files
 .env
 .env.local
-.env.*.local
 
 # Logs
-logs/
 *.log
-npm-debug.log*
 
 # Cache
-.cache/
 *.tsbuildinfo
-
-# Temporary files
-*.tar.gz
-*.zip
-vite.config.ts.*
-
-# Replit-specific (legacy)
-.replit
-replit.md
-.local/
-.config/
