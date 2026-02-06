@@ -19,10 +19,53 @@ export function useAudioAnalyzer(settings: AudioSettings) {
   const startTimeRef = useRef<number>(0);
   const audioSourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
 
+  const cleanupAudioResources = useCallback(() => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+
+    if (scriptProcessorRef.current) {
+      scriptProcessorRef.current.disconnect();
+      scriptProcessorRef.current.onaudioprocess = null;
+      scriptProcessorRef.current = null;
+    }
+
+    if (sourceRef.current) {
+      sourceRef.current.disconnect();
+      sourceRef.current = null;
+    }
+
+    if (gainNodeRef.current) {
+      gainNodeRef.current.disconnect();
+      gainNodeRef.current = null;
+    }
+
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+    }
+
+    if (audioSourceNodeRef.current) {
+      try { audioSourceNodeRef.current.stop(); } catch (_) { /* already stopped */ }
+      audioSourceNodeRef.current = null;
+    }
+
+    if (audioContextRef.current) {
+      audioContextRef.current.close().catch(() => {});
+      audioContextRef.current = null;
+    }
+
+    analyzerRef.current = null;
+  }, []);
+
   const startRecording = useCallback(async () => {
     try {
       setError(null);
       setIsProcessing(true);
+
+      // Clean up any previous audio resources to prevent leaks
+      cleanupAudioResources();
 
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -81,7 +124,7 @@ export function useAudioAnalyzer(settings: AudioSettings) {
       setIsProcessing(false);
       throw err;
     }
-  }, [settings]);
+  }, [settings, cleanupAudioResources]);
 
   const processAudioFrame = useCallback(() => {
     const analyzer = analyzerRef.current;
@@ -128,12 +171,20 @@ export function useAudioAnalyzer(settings: AudioSettings) {
 
     if (sourceRef.current) {
       sourceRef.current.disconnect();
+      sourceRef.current = null;
+    }
+
+    if (gainNodeRef.current) {
+      gainNodeRef.current.disconnect();
+      gainNodeRef.current = null;
     }
 
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach(track => track.stop());
       mediaStreamRef.current = null;
     }
+
+    // Note: AudioContext is intentionally kept open for playback
 
     const duration = (Date.now() - startTimeRef.current) / 1000;
 
@@ -237,11 +288,13 @@ export function useAudioAnalyzer(settings: AudioSettings) {
   }, []);
 
   const reset = useCallback(() => {
+    cleanupAudioResources();
     setSpectrogramData(null);
     setAudioBuffer(null);
+    setError(null);
     recordedPCMChunksRef.current = [];
     spectrogramFramesRef.current = { frequencies: [], timeStamps: [] };
-  }, []);
+  }, [cleanupAudioResources]);
 
   return {
     startRecording,

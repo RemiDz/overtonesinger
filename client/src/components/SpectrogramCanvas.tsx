@@ -201,6 +201,7 @@ export const SpectrogramCanvas = forwardRef<
 
       drawGrid(ctx, padding, chartWidth, chartHeight);
       drawAxes(ctx, padding, chartWidth, chartHeight);
+      drawFrequencyScale(ctx, padding, chartWidth, chartHeight);
       drawSpectrogramData(ctx, padding, chartWidth, chartHeight);
 
       if (showFrequencyMarkers) {
@@ -275,37 +276,6 @@ export const SpectrogramCanvas = forwardRef<
         ctx.lineTo(x, padding.top + chartHeight);
         ctx.stroke();
       }
-
-      const generateFreqSteps = () => {
-        const steps = [];
-        const range = maxFrequency - minFrequency;
-        if (range <= 1000) {
-          for (
-            let f = Math.ceil(minFrequency / 100) * 100;
-            f <= maxFrequency;
-            f += 100
-          ) {
-            steps.push(f);
-          }
-        } else if (range <= 5000) {
-          for (
-            let f = Math.ceil(minFrequency / 500) * 500;
-            f <= maxFrequency;
-            f += 500
-          ) {
-            steps.push(f);
-          }
-        } else {
-          for (
-            let f = Math.ceil(minFrequency / 1000) * 1000;
-            f <= maxFrequency;
-            f += 1000
-          ) {
-            steps.push(f);
-          }
-        }
-        return steps.slice(0, 8);
-      };
 
       const freqSteps = generateFreqSteps();
       freqSteps.forEach((freq) => {

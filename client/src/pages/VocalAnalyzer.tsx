@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { SpectrogramCanvas, type SpectrogramCanvasHandle } from '@/components/SpectrogramCanvas';
 import { TransportControls } from '@/components/TransportControls';
 import { SliderControl } from '@/components/SliderControl';
@@ -17,11 +17,18 @@ export default function VocalAnalyzer() {
   const { toast } = useToast();
   const spectrogramCanvasRef = useRef<SpectrogramCanvasHandle>(null);
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
+  const recordingStateRef = useRef<RecordingState>('idle');
   const [currentTime, setCurrentTime] = useState(0);
   const [playbackTime, setPlaybackTime] = useState(0);
   const [totalDuration, setTotalDuration] = useState(0);
   const [isExportingVideo, setIsExportingVideo] = useState(false);
   const [conversionProgress, setConversionProgress] = useState(0);
+
+  // Helper that keeps the ref in sync with state for use in async closures
+  const updateRecordingState = useCallback((state: RecordingState) => {
+    recordingStateRef.current = state;
+    setRecordingState(state);
+  }, []);
   
   const [audioSettings, setAudioSettings] = useState<AudioSettings>({
     microphoneGain: 100,
@@ -57,8 +64,19 @@ export default function VocalAnalyzer() {
     audioContext,
   } = useAudioAnalyzer(audioSettings);
 
+  // Debounced auto-frequency adjustment — only recalculates once per second
+  // instead of every animation frame (~60fps) to avoid excessive re-renders
+  const freqAdjustTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
   useEffect(() => {
-    if (spectrogramData && spectrogramData.frequencies.length > 0) {
+    if (!spectrogramData || spectrogramData.frequencies.length === 0) return;
+
+    // Clear any pending debounce timer
+    if (freqAdjustTimerRef.current) {
+      clearTimeout(freqAdjustTimerRef.current);
+    }
+
+    freqAdjustTimerRef.current = setTimeout(() => {
       const frequencies = spectrogramData.frequencies;
       const numBins = frequencies[0].length;
       const nyquistFreq = sampleRate / 2;
@@ -97,7 +115,13 @@ export default function VocalAnalyzer() {
           maxFrequency: newMax,
         }));
       }
-    }
+    }, 1000);
+
+    return () => {
+      if (freqAdjustTimerRef.current) {
+        clearTimeout(freqAdjustTimerRef.current);
+      }
+    };
   }, [spectrogramData, sampleRate]);
 
   useEffect(() => {
@@ -141,7 +165,7 @@ export default function VocalAnalyzer() {
     if (recordingState === 'idle' || recordingState === 'stopped') {
       try {
         await startRecording();
-        setRecordingState('recording');
+        updateRecordingState('recording');
         setCurrentTime(0);
         setTotalDuration(0);
       } catch (err) {
@@ -160,18 +184,18 @@ export default function VocalAnalyzer() {
       playRecording(
         (time) => setPlaybackTime(time),
         () => {
-          setRecordingState('stopped');
+          updateRecordingState('stopped');
           setPlaybackTime(0);
         }
       );
-      setRecordingState('playing');
+      updateRecordingState('playing');
     }
   };
 
   const handleStop = () => {
     if (recordingState === 'recording') {
       const duration = stopRecording();
-      setRecordingState('stopped');
+      updateRecordingState('stopped');
       setTotalDuration(duration);
       setViewportSettings({
         zoom: 100,
@@ -180,14 +204,14 @@ export default function VocalAnalyzer() {
       });
     } else if (recordingState === 'playing') {
       stopPlayback();
-      setRecordingState('stopped');
+      updateRecordingState('stopped');
       setPlaybackTime(0);
     }
   };
 
   const handleReset = () => {
     reset();
-    setRecordingState('idle');
+    updateRecordingState('idle');
     setCurrentTime(0);
     setPlaybackTime(0);
     setTotalDuration(0);
@@ -362,14 +386,14 @@ export default function VocalAnalyzer() {
 
       videoRecorder.start();
 
-      setRecordingState('playing');
+      updateRecordingState('playing');
       setPlaybackTime(0);
 
       const playbackPromise = new Promise<void>((resolve) => {
         playRecording(
           (time) => setPlaybackTime(time),
           () => {
-            setRecordingState('stopped');
+            updateRecordingState('stopped');
             setPlaybackTime(0);
             resolve();
           },
@@ -442,9 +466,11 @@ export default function VocalAnalyzer() {
         videoRecorder.cleanup();
       }
       setIsExportingVideo(false);
-      if (recordingState === 'playing') {
+      // Use ref instead of state to avoid stale closure — recordingState
+      // captured at render time would not reflect updates made during async export
+      if (recordingStateRef.current === 'playing') {
         stopPlayback();
-        setRecordingState('stopped');
+        updateRecordingState('stopped');
         setPlaybackTime(0);
       }
     }
