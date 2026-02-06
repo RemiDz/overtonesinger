@@ -408,17 +408,30 @@ export default function VocalAnalyzer() {
         }),
       ]);
 
-      const webmBlob = await videoRecorder.recordingPromise;
+      const videoBlob = await videoRecorder.recordingPromise;
+      const { mimeTypeInfo } = videoRecorder;
 
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
       const baseFilename = `spectrogram-${timestamp}`;
 
+      // If the recorder already produced a mobile-friendly format (MP4),
+      // download directly — no FFmpeg conversion needed
+      if (mimeTypeInfo.isMobileFriendly) {
+        downloadVideoBlob(videoBlob, baseFilename, mimeTypeInfo.extension);
+        toast({
+          title: 'Export Successful',
+          description: `Video downloaded as ${baseFilename}.${mimeTypeInfo.extension}`,
+        });
+        return;
+      }
+
+      // Recorder produced WebM — try converting to MP4 for mobile compatibility
       if (!isFFmpegAvailable()) {
-        downloadVideoBlob(webmBlob, baseFilename, 'webm');
+        downloadVideoBlob(videoBlob, baseFilename, mimeTypeInfo.extension);
         
         toast({
-          title: 'Video Export (WebM)',
-          description: `Downloaded as ${baseFilename}.webm. MP4 conversion unavailable (requires modern browser with SharedArrayBuffer support). WebM may not play on mobile devices.`,
+          title: `Video Export (${mimeTypeInfo.extension.toUpperCase()})`,
+          description: `Downloaded as ${baseFilename}.${mimeTypeInfo.extension}. MP4 conversion unavailable (requires cross-origin isolation). ${mimeTypeInfo.extension === 'webm' ? 'WebM may not play on mobile devices.' : ''}`,
           duration: 10000,
         });
         return;
@@ -431,7 +444,7 @@ export default function VocalAnalyzer() {
         });
 
         setConversionProgress(0);
-        const mp4Blob = await convertWebMToMP4(webmBlob, {
+        const mp4Blob = await convertWebMToMP4(videoBlob, {
           onProgress: (progress) => {
             setConversionProgress(progress);
           },
@@ -446,11 +459,11 @@ export default function VocalAnalyzer() {
       } catch (conversionError) {
         console.error('Video conversion failed:', conversionError);
         
-        downloadVideoBlob(webmBlob, baseFilename, 'webm');
+        downloadVideoBlob(videoBlob, baseFilename, mimeTypeInfo.extension);
         
         toast({
-          title: 'Video Export (WebM)',
-          description: `Downloaded as ${baseFilename}.webm. MP4 conversion failed. WebM may not play on mobile devices.`,
+          title: `Video Export (${mimeTypeInfo.extension.toUpperCase()})`,
+          description: `Downloaded as ${baseFilename}.${mimeTypeInfo.extension}. MP4 conversion failed. WebM may not play on mobile devices.`,
           duration: 8000,
         });
       }

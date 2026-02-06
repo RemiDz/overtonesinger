@@ -28,10 +28,13 @@ export function createVideoExportRecorder(
   ]);
 
   const mimeTypeInfo = getSupportedMimeType();
-  const mediaRecorder = new MediaRecorder(combinedStream, {
-    mimeType: mimeTypeInfo.mimeType,
-    videoBitsPerSecond
-  });
+  
+  // If mimeType is empty, let the browser pick its default format
+  const recorderOptions: MediaRecorderOptions = { videoBitsPerSecond };
+  if (mimeTypeInfo.mimeType) {
+    recorderOptions.mimeType = mimeTypeInfo.mimeType;
+  }
+  const mediaRecorder = new MediaRecorder(combinedStream, recorderOptions);
 
   const chunks: Blob[] = [];
   let resolveRecording: ((blob: Blob) => void) | null = null;
@@ -53,7 +56,9 @@ export function createVideoExportRecorder(
     mediaRecorder.removeEventListener('stop', handleStop);
     mediaRecorder.removeEventListener('error', handleError);
     
-    const videoBlob = new Blob(chunks, { type: mimeTypeInfo.mimeType });
+    // Use the actual MIME type from the recorder (may differ from requested if browser chose default)
+    const actualMimeType = mediaRecorder.mimeType || mimeTypeInfo.mimeType || 'video/webm';
+    const videoBlob = new Blob(chunks, { type: actualMimeType });
     resolveRecording?.(videoBlob);
   };
 
@@ -110,9 +115,12 @@ export interface MimeTypeInfo {
 
 function getSupportedMimeType(): MimeTypeInfo {
   const types = [
+    // MP4 variants — mobile-friendly, no conversion needed
     { mimeType: 'video/mp4;codecs=h264,aac', isMobileFriendly: true, extension: 'mp4' },
     { mimeType: 'video/mp4;codecs=avc1,mp4a', isMobileFriendly: true, extension: 'mp4' },
+    { mimeType: 'video/mp4;codecs=avc1', isMobileFriendly: true, extension: 'mp4' },
     { mimeType: 'video/mp4', isMobileFriendly: true, extension: 'mp4' },
+    // WebM variants — needs FFmpeg conversion for mobile
     { mimeType: 'video/webm;codecs=h264,opus', isMobileFriendly: false, extension: 'webm' },
     { mimeType: 'video/webm;codecs=vp8,opus', isMobileFriendly: false, extension: 'webm' },
     { mimeType: 'video/webm;codecs=vp9,opus', isMobileFriendly: false, extension: 'webm' },
@@ -125,7 +133,13 @@ function getSupportedMimeType(): MimeTypeInfo {
     }
   }
   
-  return { mimeType: 'video/webm', isMobileFriendly: false, extension: 'webm' };
+  // No explicit type matched — let the browser use its default format.
+  // Safari on iOS defaults to MP4; other browsers typically default to WebM.
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  if (isSafari) {
+    return { mimeType: '', isMobileFriendly: true, extension: 'mp4' };
+  }
+  return { mimeType: '', isMobileFriendly: false, extension: 'webm' };
 }
 
 export function downloadVideoBlob(blob: Blob, baseFilename: string, extension: string) {
