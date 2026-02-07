@@ -18,10 +18,8 @@ export function useAudioAnalyzer(settings: AudioSettings) {
   const animationFrameRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
   const audioSourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
-  const highpassFilterRef = useRef<BiquadFilterNode | null>(null);
-  const highpassFilter2Ref = useRef<BiquadFilterNode | null>(null);
-  const lowpassFilterRef = useRef<BiquadFilterNode | null>(null);
-  const lowpassFilter2Ref = useRef<BiquadFilterNode | null>(null);
+  const highpassFiltersRef = useRef<BiquadFilterNode[]>([]);
+  const lowpassFiltersRef = useRef<BiquadFilterNode[]>([]);
 
   const cleanupAudioResources = useCallback(() => {
     if (animationFrameRef.current) {
@@ -251,46 +249,35 @@ export function useAudioAnalyzer(settings: AudioSettings) {
       // Build the audio chain: source → [filters] → destination
       let lastNode: AudioNode = source;
 
-      if (filterBand && (filterBand.lowFreq > 20 || filterBand.highFreq < settings.sampleRate / 2 - 100)) {
-        // Stacked 2nd-order highpass filters (4th-order total = steep rolloff)
-        if (filterBand.lowFreq > 20) {
-          const hp1 = audioContext.createBiquadFilter();
-          hp1.type = 'highpass';
-          hp1.frequency.value = filterBand.lowFreq;
-          hp1.Q.value = 0.707;
+      // Always create filter nodes so real-time dragging works during playback.
+      // Use 4 cascaded 2nd-order stages = 8th-order Butterworth (~48 dB/octave)
+      // for a steep enough rolloff to truly silence strong overtones.
+      if (filterBand) {
+        const ORDER = 4; // number of cascaded 2nd-order sections
 
-          const hp2 = audioContext.createBiquadFilter();
-          hp2.type = 'highpass';
-          hp2.frequency.value = filterBand.lowFreq;
-          hp2.Q.value = 0.707;
-
-          lastNode.connect(hp1);
-          hp1.connect(hp2);
-          lastNode = hp2;
-
-          highpassFilterRef.current = hp1;
-          highpassFilter2Ref.current = hp2;
+        const hpFilters: BiquadFilterNode[] = [];
+        for (let i = 0; i < ORDER; i++) {
+          const hp = audioContext.createBiquadFilter();
+          hp.type = 'highpass';
+          hp.frequency.value = filterBand.lowFreq;
+          hp.Q.value = 0.707;
+          lastNode.connect(hp);
+          lastNode = hp;
+          hpFilters.push(hp);
         }
+        highpassFiltersRef.current = hpFilters;
 
-        // Stacked 2nd-order lowpass filters (4th-order total)
-        if (filterBand.highFreq < settings.sampleRate / 2 - 100) {
-          const lp1 = audioContext.createBiquadFilter();
-          lp1.type = 'lowpass';
-          lp1.frequency.value = filterBand.highFreq;
-          lp1.Q.value = 0.707;
-
-          const lp2 = audioContext.createBiquadFilter();
-          lp2.type = 'lowpass';
-          lp2.frequency.value = filterBand.highFreq;
-          lp2.Q.value = 0.707;
-
-          lastNode.connect(lp1);
-          lp1.connect(lp2);
-          lastNode = lp2;
-
-          lowpassFilterRef.current = lp1;
-          lowpassFilter2Ref.current = lp2;
+        const lpFilters: BiquadFilterNode[] = [];
+        for (let i = 0; i < ORDER; i++) {
+          const lp = audioContext.createBiquadFilter();
+          lp.type = 'lowpass';
+          lp.frequency.value = filterBand.highFreq;
+          lp.Q.value = 0.707;
+          lastNode.connect(lp);
+          lastNode = lp;
+          lpFilters.push(lp);
         }
+        lowpassFiltersRef.current = lpFilters;
       }
 
       lastNode.connect(audioContext.destination);
@@ -321,10 +308,8 @@ export function useAudioAnalyzer(settings: AudioSettings) {
 
       source.onended = () => {
         audioSourceNodeRef.current = null;
-        highpassFilterRef.current = null;
-        highpassFilter2Ref.current = null;
-        lowpassFilterRef.current = null;
-        lowpassFilter2Ref.current = null;
+        highpassFiltersRef.current = [];
+        lowpassFiltersRef.current = [];
         if (playbackAnimationRef.current) {
           cancelAnimationFrame(playbackAnimationRef.current);
           playbackAnimationRef.current = null;
@@ -342,13 +327,11 @@ export function useAudioAnalyzer(settings: AudioSettings) {
     if (!filterBand) return;
     const now = audioContextRef.current?.currentTime || 0;
     
-    if (highpassFilterRef.current && highpassFilter2Ref.current) {
-      highpassFilterRef.current.frequency.setTargetAtTime(filterBand.lowFreq, now, 0.02);
-      highpassFilter2Ref.current.frequency.setTargetAtTime(filterBand.lowFreq, now, 0.02);
+    for (const hp of highpassFiltersRef.current) {
+      hp.frequency.setTargetAtTime(filterBand.lowFreq, now, 0.02);
     }
-    if (lowpassFilterRef.current && lowpassFilter2Ref.current) {
-      lowpassFilterRef.current.frequency.setTargetAtTime(filterBand.highFreq, now, 0.02);
-      lowpassFilter2Ref.current.frequency.setTargetAtTime(filterBand.highFreq, now, 0.02);
+    for (const lp of lowpassFiltersRef.current) {
+      lp.frequency.setTargetAtTime(filterBand.highFreq, now, 0.02);
     }
   }, []);
 
