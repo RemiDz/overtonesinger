@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { exportToWAV, downloadBlob, exportCanvasToPNG } from '@/lib/audioExport';
 import { createVideoExportRecorder, downloadVideoBlob } from '@/lib/videoExport';
 import { convertWebMToMP4, isFFmpegAvailable } from '@/lib/ffmpegConverter';
-import { Sun, Contrast, Palette, Activity, Heart, Focus, Target, AudioLines } from 'lucide-react';
+import { Sun, Contrast, Palette, Activity, Heart, Focus, Target, Maximize, Minimize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { RecordingState, AudioSettings, ViewportSettings, IntensityScaleMode, ColorScheme, FFTSize } from '@shared/schema';
@@ -25,10 +25,10 @@ export default function VocalAnalyzer() {
   const [isExportingVideo, setIsExportingVideo] = useState(false);
   const [conversionProgress, setConversionProgress] = useState(0);
   const [targetHarmonic, setTargetHarmonic] = useState<number | null>(null);
-  const [filterEnabled, setFilterEnabled] = useState(false);
   const [filterBand, setFilterBand] = useState<FilterBand>({ lowFreq: 60, highFreq: 8000 });
   const [loopPlayback, setLoopPlayback] = useState(false);
   const loopPlaybackRef = useRef(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Helper that keeps the ref in sync with state for use in async closures
   const updateRecordingState = useCallback((state: RecordingState) => {
@@ -74,15 +74,11 @@ export default function VocalAnalyzer() {
 
   // Sync filter band bounds when the displayed frequency range changes
   useEffect(() => {
-    if (!filterEnabled) {
-      setFilterBand({ lowFreq: audioSettings.minFrequency, highFreq: audioSettings.maxFrequency });
-    } else {
-      setFilterBand(prev => ({
-        lowFreq: Math.max(prev.lowFreq, audioSettings.minFrequency),
-        highFreq: Math.min(prev.highFreq, audioSettings.maxFrequency),
-      }));
-    }
-  }, [audioSettings.minFrequency, audioSettings.maxFrequency, filterEnabled]);
+    setFilterBand(prev => ({
+      lowFreq: Math.max(prev.lowFreq, audioSettings.minFrequency),
+      highFreq: Math.min(prev.highFreq, audioSettings.maxFrequency),
+    }));
+  }, [audioSettings.minFrequency, audioSettings.maxFrequency]);
 
   // Debounced auto-frequency adjustment — only recalculates once per second
   // instead of every animation frame (~60fps) to avoid excessive re-renders
@@ -212,6 +208,10 @@ export default function VocalAnalyzer() {
     if ((recordingState === 'stopped' || recordingStateRef.current === 'stopped') && audioBuffer) {
       setPlaybackTime(0);
 
+      // Only apply audio filter if the band is narrower than the full range
+      const isFiltered = filterBand.lowFreq > audioSettings.minFrequency + 10 ||
+                         filterBand.highFreq < audioSettings.maxFrequency - 10;
+
       const onEnd = () => {
         if (loopPlaybackRef.current) {
           // Re-trigger playback for loop
@@ -220,7 +220,7 @@ export default function VocalAnalyzer() {
             (time) => setPlaybackTime(time),
             onEnd,
             undefined,
-            filterEnabled ? filterBand : null
+            isFiltered ? filterBand : null
           );
         } else {
           updateRecordingState('stopped');
@@ -232,11 +232,11 @@ export default function VocalAnalyzer() {
         (time) => setPlaybackTime(time),
         onEnd,
         undefined,
-        filterEnabled ? filterBand : null
+        isFiltered ? filterBand : null
       );
       updateRecordingState('playing');
     }
-  }, [recordingState, audioBuffer, playRecording, filterEnabled, filterBand, updateRecordingState]);
+  }, [recordingState, audioBuffer, playRecording, filterBand, audioSettings.minFrequency, audioSettings.maxFrequency, updateRecordingState]);
 
   const handleStop = () => {
     if (recordingState === 'recording') {
@@ -266,10 +266,10 @@ export default function VocalAnalyzer() {
     setCurrentTime(0);
     setPlaybackTime(0);
     setTotalDuration(0);
-    setFilterEnabled(false);
     setFilterBand({ lowFreq: 60, highFreq: 8000 });
     setTargetHarmonic(null);
     setLoopPlayback(false);
+    loopPlaybackRef.current = false;
     setViewportSettings({
       zoom: 100,
       scrollPosition: 0,
@@ -337,20 +337,25 @@ export default function VocalAnalyzer() {
     }
   }, [recordingState, updatePlaybackFilter]);
 
-  const toggleFilter = () => {
-    const next = !filterEnabled;
-    setFilterEnabled(next);
-    if (!next) {
-      // Reset band to full range when disabling
-      setFilterBand({ lowFreq: audioSettings.minFrequency, highFreq: audioSettings.maxFrequency });
-    }
-  };
-
   const toggleLoop = () => {
     const next = !loopPlayback;
     setLoopPlayback(next);
     loopPlaybackRef.current = next;
   };
+
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
 
   const getColorSchemeLabel = () => {
     const labels = {
@@ -645,6 +650,24 @@ export default function VocalAnalyzer() {
                 <p>Support this project</p>
               </TooltipContent>
             </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={toggleFullscreen}
+                  data-testid="button-fullscreen"
+                >
+                  {isFullscreen
+                    ? <Minimize className="h-4 w-4" />
+                    : <Maximize className="h-4 w-4" />}
+                  <span className="sr-only">{isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
       </div>
@@ -731,23 +754,6 @@ export default function VocalAnalyzer() {
                 <p>Target: {targetHarmonic ? `H${targetHarmonic}` : 'Off'}</p>
               </TooltipContent>
             </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={toggleFilter}
-                  data-testid="button-freq-filter"
-                  className={filterEnabled ? 'relative text-[#00c8ff] dark:text-[#00c8ff]' : 'relative'}
-                >
-                  <AudioLines className="h-4 w-4" />
-                  <span className="sr-only">Frequency Filter: {filterEnabled ? 'On' : 'Off'}</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Freq Filter: {filterEnabled ? 'On' : 'Off'}</p>
-              </TooltipContent>
-            </Tooltip>
           </div>
         </div>
       </div>
@@ -774,7 +780,7 @@ export default function VocalAnalyzer() {
           targetHarmonic={targetHarmonic}
         />
         <FrequencyBandFilter
-          enabled={filterEnabled}
+          enabled={true}
           minFrequency={audioSettings.minFrequency}
           maxFrequency={audioSettings.maxFrequency}
           filterBand={filterBand}
