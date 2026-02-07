@@ -1137,7 +1137,7 @@ export const SpectrogramCanvas = forwardRef<
       // Label
       ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
       ctx.font = "10px Inter, sans-serif";
-      ctx.fillText("overtones", x + 34, y + 8);
+      ctx.fillText("harmonics", x + 34, y + 8);
 
       // Max record
       ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
