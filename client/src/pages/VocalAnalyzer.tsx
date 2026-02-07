@@ -3,12 +3,13 @@ import { SpectrogramCanvas, type SpectrogramCanvasHandle } from '@/components/Sp
 import { TransportControls } from '@/components/TransportControls';
 import { SliderControl } from '@/components/SliderControl';
 import { ZoomControls } from '@/components/ZoomControls';
+import { FrequencyBandFilter, type FilterBand } from '@/components/FrequencyBandFilter';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useToast } from '@/hooks/use-toast';
 import { exportToWAV, downloadBlob, exportCanvasToPNG } from '@/lib/audioExport';
 import { createVideoExportRecorder, downloadVideoBlob } from '@/lib/videoExport';
 import { convertWebMToMP4, isFFmpegAvailable } from '@/lib/ffmpegConverter';
-import { Sun, Contrast, Palette, Activity, Heart, Focus, Target } from 'lucide-react';
+import { Sun, Contrast, Palette, Activity, Heart, Focus, Target, AudioLines } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { RecordingState, AudioSettings, ViewportSettings, IntensityScaleMode, ColorScheme, FFTSize } from '@shared/schema';
@@ -24,6 +25,8 @@ export default function VocalAnalyzer() {
   const [isExportingVideo, setIsExportingVideo] = useState(false);
   const [conversionProgress, setConversionProgress] = useState(0);
   const [targetHarmonic, setTargetHarmonic] = useState<number | null>(null);
+  const [filterEnabled, setFilterEnabled] = useState(false);
+  const [filterBand, setFilterBand] = useState<FilterBand>({ lowFreq: 60, highFreq: 8000 });
 
   // Helper that keeps the ref in sync with state for use in async closures
   const updateRecordingState = useCallback((state: RecordingState) => {
@@ -56,6 +59,7 @@ export default function VocalAnalyzer() {
     stopRecording,
     playRecording,
     stopPlayback,
+    updatePlaybackFilter,
     reset,
     spectrogramData,
     audioBuffer,
@@ -65,6 +69,18 @@ export default function VocalAnalyzer() {
     audioContext,
     getAudioContext,
   } = useAudioAnalyzer(audioSettings);
+
+  // Sync filter band bounds when the displayed frequency range changes
+  useEffect(() => {
+    if (!filterEnabled) {
+      setFilterBand({ lowFreq: audioSettings.minFrequency, highFreq: audioSettings.maxFrequency });
+    } else {
+      setFilterBand(prev => ({
+        lowFreq: Math.max(prev.lowFreq, audioSettings.minFrequency),
+        highFreq: Math.min(prev.highFreq, audioSettings.maxFrequency),
+      }));
+    }
+  }, [audioSettings.minFrequency, audioSettings.maxFrequency, filterEnabled]);
 
   // Debounced auto-frequency adjustment — only recalculates once per second
   // instead of every animation frame (~60fps) to avoid excessive re-renders
@@ -198,7 +214,9 @@ export default function VocalAnalyzer() {
         () => {
           updateRecordingState('stopped');
           setPlaybackTime(0);
-        }
+        },
+        undefined,
+        filterEnabled ? filterBand : null
       );
       updateRecordingState('playing');
     }
@@ -284,6 +302,22 @@ export default function VocalAnalyzer() {
       setTargetHarmonic(null);
     } else {
       setTargetHarmonic(targetHarmonic + 1);
+    }
+  };
+
+  const handleFilterChange = useCallback((band: FilterBand) => {
+    setFilterBand(band);
+    if (recordingState === 'playing') {
+      updatePlaybackFilter(band);
+    }
+  }, [recordingState, updatePlaybackFilter]);
+
+  const toggleFilter = () => {
+    const next = !filterEnabled;
+    setFilterEnabled(next);
+    if (!next) {
+      // Reset band to full range when disabling
+      setFilterBand({ lowFreq: audioSettings.minFrequency, highFreq: audioSettings.maxFrequency });
     }
   };
 
@@ -664,6 +698,23 @@ export default function VocalAnalyzer() {
                 <p>Target: {targetHarmonic ? `H${targetHarmonic}` : 'Off'}</p>
               </TooltipContent>
             </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={toggleFilter}
+                  data-testid="button-freq-filter"
+                  className={filterEnabled ? 'relative text-[#00c8ff] dark:text-[#00c8ff]' : 'relative'}
+                >
+                  <AudioLines className="h-4 w-4" />
+                  <span className="sr-only">Frequency Filter: {filterEnabled ? 'On' : 'Off'}</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Freq Filter: {filterEnabled ? 'On' : 'Off'}</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
       </div>
@@ -688,6 +739,14 @@ export default function VocalAnalyzer() {
           colorScheme={audioSettings.colorScheme}
           sampleRate={sampleRate}
           targetHarmonic={targetHarmonic}
+        />
+        <FrequencyBandFilter
+          enabled={filterEnabled}
+          minFrequency={audioSettings.minFrequency}
+          maxFrequency={audioSettings.maxFrequency}
+          filterBand={filterBand}
+          onFilterChange={handleFilterChange}
+          padding={{ top: 12, right: 8, bottom: 24, left: 26 }}
         />
       </div>
 

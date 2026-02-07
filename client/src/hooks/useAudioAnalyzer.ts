@@ -18,6 +18,10 @@ export function useAudioAnalyzer(settings: AudioSettings) {
   const animationFrameRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
   const audioSourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
+  const highpassFilterRef = useRef<BiquadFilterNode | null>(null);
+  const highpassFilter2Ref = useRef<BiquadFilterNode | null>(null);
+  const lowpassFilterRef = useRef<BiquadFilterNode | null>(null);
+  const lowpassFilter2Ref = useRef<BiquadFilterNode | null>(null);
 
   const cleanupAudioResources = useCallback(() => {
     if (animationFrameRef.current) {
@@ -226,7 +230,8 @@ export function useAudioAnalyzer(settings: AudioSettings) {
   const playRecording = useCallback((
     onPlaybackUpdate?: (currentTime: number) => void, 
     onPlaybackEnd?: () => void,
-    audioStreamDestination?: MediaStreamAudioDestinationNode
+    audioStreamDestination?: MediaStreamAudioDestinationNode,
+    filterBand?: { lowFreq: number; highFreq: number } | null
   ) => {
     if (!audioBuffer || !audioContextRef.current) return;
 
@@ -242,10 +247,56 @@ export function useAudioAnalyzer(settings: AudioSettings) {
 
       const source = audioContext.createBufferSource();
       source.buffer = audioBufferData;
-      source.connect(audioContext.destination);
+
+      // Build the audio chain: source → [filters] → destination
+      let lastNode: AudioNode = source;
+
+      if (filterBand && (filterBand.lowFreq > 20 || filterBand.highFreq < settings.sampleRate / 2 - 100)) {
+        // Stacked 2nd-order highpass filters (4th-order total = steep rolloff)
+        if (filterBand.lowFreq > 20) {
+          const hp1 = audioContext.createBiquadFilter();
+          hp1.type = 'highpass';
+          hp1.frequency.value = filterBand.lowFreq;
+          hp1.Q.value = 0.707;
+
+          const hp2 = audioContext.createBiquadFilter();
+          hp2.type = 'highpass';
+          hp2.frequency.value = filterBand.lowFreq;
+          hp2.Q.value = 0.707;
+
+          lastNode.connect(hp1);
+          hp1.connect(hp2);
+          lastNode = hp2;
+
+          highpassFilterRef.current = hp1;
+          highpassFilter2Ref.current = hp2;
+        }
+
+        // Stacked 2nd-order lowpass filters (4th-order total)
+        if (filterBand.highFreq < settings.sampleRate / 2 - 100) {
+          const lp1 = audioContext.createBiquadFilter();
+          lp1.type = 'lowpass';
+          lp1.frequency.value = filterBand.highFreq;
+          lp1.Q.value = 0.707;
+
+          const lp2 = audioContext.createBiquadFilter();
+          lp2.type = 'lowpass';
+          lp2.frequency.value = filterBand.highFreq;
+          lp2.Q.value = 0.707;
+
+          lastNode.connect(lp1);
+          lp1.connect(lp2);
+          lastNode = lp2;
+
+          lowpassFilterRef.current = lp1;
+          lowpassFilter2Ref.current = lp2;
+        }
+      }
+
+      lastNode.connect(audioContext.destination);
       
       if (audioStreamDestination) {
-        source.connect(audioStreamDestination);
+        lastNode.connect(audioStreamDestination);
       }
       
       const playbackStartTime = audioContext.currentTime;
@@ -270,6 +321,10 @@ export function useAudioAnalyzer(settings: AudioSettings) {
 
       source.onended = () => {
         audioSourceNodeRef.current = null;
+        highpassFilterRef.current = null;
+        highpassFilter2Ref.current = null;
+        lowpassFilterRef.current = null;
+        lowpassFilter2Ref.current = null;
         if (playbackAnimationRef.current) {
           cancelAnimationFrame(playbackAnimationRef.current);
           playbackAnimationRef.current = null;
@@ -282,6 +337,20 @@ export function useAudioAnalyzer(settings: AudioSettings) {
       setError('Failed to play recording');
     }
   }, [audioBuffer, settings.sampleRate]);
+
+  const updatePlaybackFilter = useCallback((filterBand: { lowFreq: number; highFreq: number } | null) => {
+    if (!filterBand) return;
+    const now = audioContextRef.current?.currentTime || 0;
+    
+    if (highpassFilterRef.current && highpassFilter2Ref.current) {
+      highpassFilterRef.current.frequency.setTargetAtTime(filterBand.lowFreq, now, 0.02);
+      highpassFilter2Ref.current.frequency.setTargetAtTime(filterBand.lowFreq, now, 0.02);
+    }
+    if (lowpassFilterRef.current && lowpassFilter2Ref.current) {
+      lowpassFilterRef.current.frequency.setTargetAtTime(filterBand.highFreq, now, 0.02);
+      lowpassFilter2Ref.current.frequency.setTargetAtTime(filterBand.highFreq, now, 0.02);
+    }
+  }, []);
 
   const stopPlayback = useCallback(() => {
     if (playbackAnimationRef.current) {
@@ -321,6 +390,7 @@ export function useAudioAnalyzer(settings: AudioSettings) {
     stopRecording,
     playRecording,
     stopPlayback,
+    updatePlaybackFilter,
     reset,
     spectrogramData,
     audioBuffer,
