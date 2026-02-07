@@ -39,18 +39,18 @@ export function TransportControls({
   const canStop = isRecording || isPlaying;
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-1 sm:gap-3">
       {/* Record Button */}
       <Button
         size="icon"
         variant={isRecording ? 'default' : 'outline'}
         onClick={onRecord}
         disabled={disabled || isPlaying || isRecording}
-        className={`w-10 h-10 rounded-full ${isRecording ? 'animate-pulse' : ''}`}
+        className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${isRecording ? 'animate-pulse' : ''}`}
         aria-label="Record"
         data-testid="button-record"
       >
-        <Circle className={`h-5 w-5 ${isRecording ? 'fill-current' : ''}`} />
+        <Circle className={`h-4 w-4 sm:h-5 sm:w-5 ${isRecording ? 'fill-current' : ''}`} />
       </Button>
 
       {/* Play Button */}
@@ -59,11 +59,11 @@ export function TransportControls({
         variant={isPlaying ? 'default' : 'outline'}
         onClick={onPlay}
         disabled={disabled || !canPlay}
-        className="w-10 h-10 rounded-full"
+        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full"
         aria-label="Play"
         data-testid="button-play"
       >
-        <Play className={`h-5 w-5 ${isPlaying ? 'fill-current' : ''}`} />
+        <Play className={`h-4 w-4 sm:h-5 sm:w-5 ${isPlaying ? 'fill-current' : ''}`} />
       </Button>
 
       {/* Loop Button */}
@@ -72,11 +72,11 @@ export function TransportControls({
         variant={loopEnabled ? 'default' : 'outline'}
         onClick={onToggleLoop}
         disabled={disabled || isRecording}
-        className="w-10 h-10 rounded-full"
+        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full"
         aria-label={loopEnabled ? 'Disable loop' : 'Enable loop'}
         data-testid="button-loop"
       >
-        <Repeat className={`h-4 w-4 ${loopEnabled ? 'text-primary-foreground' : ''}`} />
+        <Repeat className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${loopEnabled ? 'text-primary-foreground' : ''}`} />
       </Button>
 
       {/* Stop Button */}
@@ -85,11 +85,11 @@ export function TransportControls({
         variant="outline"
         onClick={onStop}
         disabled={disabled || !canStop}
-        className="w-10 h-10 rounded-full"
+        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full"
         aria-label="Stop"
         data-testid="button-stop"
       >
-        <Square className="h-4 w-4 fill-current" />
+        <Square className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-current" />
       </Button>
 
       {/* Reset Button */}
@@ -98,27 +98,27 @@ export function TransportControls({
         variant="outline"
         onClick={onReset}
         disabled={disabled || isRecording || isPlaying}
-        className="w-10 h-10 rounded-full"
+        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full"
         aria-label="New Session"
         data-testid="button-reset"
       >
-        <RotateCcw className="h-5 w-5" />
+        <RotateCcw className="h-4 w-4 sm:h-5 sm:w-5" />
       </Button>
 
       {hasRecording && (
         <>
-          <div className="w-px h-8 bg-border mx-1" />
+          <div className="w-px h-6 sm:h-8 bg-border mx-0.5 sm:mx-1" />
           
           <Button
             size="icon"
             variant="outline"
             onClick={onExportWAV}
             disabled={disabled || isRecording || isPlaying}
-            className="w-10 h-10 rounded-full"
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full"
             aria-label="Export WAV"
             data-testid="button-export-wav"
           >
-            <Download className="h-5 w-5" />
+            <Download className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
 
           <Button
@@ -126,11 +126,11 @@ export function TransportControls({
             variant="outline"
             onClick={onExportPNG}
             disabled={disabled}
-            className="w-10 h-10 rounded-full"
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full"
             aria-label="Export PNG"
             data-testid="button-export-png"
           >
-            <Image className="h-5 w-5" />
+            <Image className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
 
           <Button
@@ -138,11 +138,11 @@ export function TransportControls({
             variant="outline"
             onClick={onExportVideo}
             disabled={disabled || isRecording || isPlaying || isExportingVideo}
-            className="w-10 h-10 rounded-full"
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full"
             aria-label="Export Video"
             data-testid="button-export-video"
           >
-            <Video className="h-5 w-5" />
+            <Video className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
         </>
       )}

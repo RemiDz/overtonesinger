@@ -344,17 +344,52 @@ export default function VocalAnalyzer() {
   };
 
   const toggleFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
+    const doc = document as any;
+    const el = document.documentElement as any;
+
+    // Detect iOS iPhone (no Fullscreen API support)
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    const isIPhone = /iPhone|iPod/.test(navigator.userAgent);
+
+    const isFs = doc.fullscreenElement || doc.webkitFullscreenElement;
+    if (!isFs) {
+      const req = el.requestFullscreen || el.webkitRequestFullscreen;
+      if (req) {
+        req.call(el).catch(() => {
+          // Fullscreen request failed — likely iOS iPhone
+          if (isIPhone) {
+            toast({
+              title: 'Fullscreen on iPhone',
+              description: 'Tap the share button → "Add to Home Screen" to run fullscreen.',
+              duration: 6000,
+            });
+          }
+        });
+      } else if (isIOS) {
+        // No fullscreen API at all
+        toast({
+          title: 'Fullscreen on iPhone',
+          description: 'Tap the share button → "Add to Home Screen" to run fullscreen.',
+          duration: 6000,
+        });
+      }
     } else {
-      document.exitFullscreen().catch(() => {});
+      const exit = doc.exitFullscreen || doc.webkitExitFullscreen;
+      if (exit) exit.call(doc).catch(() => {});
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
-    const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    const onFsChange = () => {
+      const doc = document as any;
+      setIsFullscreen(!!(doc.fullscreenElement || doc.webkitFullscreenElement));
+    };
     document.addEventListener('fullscreenchange', onFsChange);
-    return () => document.removeEventListener('fullscreenchange', onFsChange);
+    document.addEventListener('webkitfullscreenchange', onFsChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', onFsChange);
+      document.removeEventListener('webkitfullscreenchange', onFsChange);
+    };
   }, []);
 
   const getColorSchemeLabel = () => {
@@ -612,8 +647,8 @@ export default function VocalAnalyzer() {
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Transport Controls Row */}
-      <div className="flex-none border-b border-border bg-card">
-        <div className="flex items-center justify-between px-2 sm:px-4 py-1.5 gap-2 sm:gap-4">
+      <div className="flex-none border-b border-border bg-card overflow-hidden">
+        <div className="flex items-center justify-between px-1 sm:px-4 py-1.5 gap-1 sm:gap-4">
           <TransportControls
             recordingState={recordingState}
             onRecord={handleRecord}
@@ -629,8 +664,8 @@ export default function VocalAnalyzer() {
             loopEnabled={loopPlayback}
             onToggleLoop={toggleLoop}
           />
-          <div className="flex items-center gap-2 sm:gap-4">
-            <div className="text-sm font-medium text-muted-foreground">
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            <div className="text-sm font-medium text-muted-foreground hidden sm:block">
               {getStatusText()}
             </div>
             <Tooltip>
@@ -640,7 +675,7 @@ export default function VocalAnalyzer() {
                   size="icon"
                   onClick={() => window.open('https://www.paypal.com/donate/?hosted_button_id=ABRWM7GB438R4', '_blank', 'noopener,noreferrer')}
                   data-testid="button-donate"
-                  className="text-pink-500 hover:text-pink-600 dark:text-pink-400 dark:hover:text-pink-500"
+                  className="text-pink-500 hover:text-pink-600 dark:text-pink-400 dark:hover:text-pink-500 h-8 w-8 sm:h-10 sm:w-10"
                 >
                   <Heart className="h-4 w-4 fill-current" />
                   <span className="sr-only">Donate</span>
@@ -657,6 +692,7 @@ export default function VocalAnalyzer() {
                   size="icon"
                   onClick={toggleFullscreen}
                   data-testid="button-fullscreen"
+                  className="h-8 w-8 sm:h-10 sm:w-10"
                 >
                   {isFullscreen
                     ? <Minimize className="h-4 w-4" />
