@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { exportToWAV, downloadBlob, exportCanvasToPNG } from '@/lib/audioExport';
 import { createVideoExportRecorder, downloadVideoBlob } from '@/lib/videoExport';
 import { convertWebMToMP4, isFFmpegAvailable } from '@/lib/ffmpegConverter';
-import { Sun, Contrast, Palette, Activity, Heart, Focus } from 'lucide-react';
+import { Sun, Contrast, Palette, Activity, Heart, Focus, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { RecordingState, AudioSettings, ViewportSettings, IntensityScaleMode, ColorScheme, FFTSize } from '@shared/schema';
@@ -23,6 +23,7 @@ export default function VocalAnalyzer() {
   const [totalDuration, setTotalDuration] = useState(0);
   const [isExportingVideo, setIsExportingVideo] = useState(false);
   const [conversionProgress, setConversionProgress] = useState(0);
+  const [targetHarmonic, setTargetHarmonic] = useState<number | null>(null);
 
   // Helper that keeps the ref in sync with state for use in async closures
   const updateRecordingState = useCallback((state: RecordingState) => {
@@ -273,6 +274,17 @@ export default function VocalAnalyzer() {
     const currentIndex = scales.indexOf(audioSettings.intensityScale);
     const nextIndex = (currentIndex + 1) % scales.length;
     setAudioSettings(prev => ({ ...prev, intensityScale: scales[nextIndex] }));
+  };
+
+  const cycleTargetHarmonic = () => {
+    // Cycle: off → H2 → H3 → H4 → H5 → H6 → H7 → H8 → off
+    if (targetHarmonic === null) {
+      setTargetHarmonic(2);
+    } else if (targetHarmonic >= 8) {
+      setTargetHarmonic(null);
+    } else {
+      setTargetHarmonic(targetHarmonic + 1);
+    }
   };
 
   const getColorSchemeLabel = () => {
@@ -635,6 +647,23 @@ export default function VocalAnalyzer() {
                 <p>Intensity: {getIntensityScaleLabel()}</p>
               </TooltipContent>
             </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={cycleTargetHarmonic}
+                  data-testid="button-target-harmonic"
+                  className={targetHarmonic !== null ? 'relative text-[#ffc800] dark:text-[#ffc800]' : 'relative'}
+                >
+                  <Target className="h-4 w-4" />
+                  <span className="sr-only">Target: {targetHarmonic ? `H${targetHarmonic}` : 'Off'}</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Target: {targetHarmonic ? `H${targetHarmonic}` : 'Off'}</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
       </div>
@@ -658,6 +687,7 @@ export default function VocalAnalyzer() {
           maxFrequency={audioSettings.maxFrequency}
           colorScheme={audioSettings.colorScheme}
           sampleRate={sampleRate}
+          targetHarmonic={targetHarmonic}
         />
       </div>
 

@@ -29,7 +29,20 @@ interface SpectrogramCanvasProps {
   maxFrequency?: number;
   colorScheme?: ColorScheme;
   sampleRate?: number;
+  targetHarmonic?: number | null;
 }
+
+// Musical interval names for the harmonic series
+const HARMONIC_LABELS: Record<number, string> = {
+  1: "Fund.",
+  2: "Oct",
+  3: "5th",
+  4: "2·Oct",
+  5: "M3",
+  6: "5th",
+  7: "m7",
+  8: "3·Oct",
+};
 
 export interface SpectrogramCanvasHandle {
   getCanvas: () => HTMLCanvasElement | null;
@@ -57,6 +70,7 @@ export const SpectrogramCanvas = forwardRef<
       maxFrequency = 5000,
       colorScheme = "default",
       sampleRate = 48000,
+      targetHarmonic = null,
     },
     ref,
   ) => {
@@ -129,6 +143,7 @@ export const SpectrogramCanvas = forwardRef<
       minFrequency,
       maxFrequency,
       colorScheme,
+      targetHarmonic,
     ]);
 
     const getAdjustedTimeline = () => {
@@ -222,6 +237,12 @@ export const SpectrogramCanvas = forwardRef<
       }
 
       // drawOvertoneCounter(ctx, padding, currentOvertoneCount, maxOvertoneCount);
+
+      if (targetHarmonic && showFrequencyMarkers) {
+        drawTargetGuide(ctx, padding, chartWidth, chartHeight);
+      }
+
+      drawOvertoneCounter(ctx, padding, currentOvertoneCount, maxOvertoneCount);
 
       if (isPlaying) {
         drawPlaybackIndicator(ctx, padding, chartWidth, chartHeight);
@@ -776,6 +797,7 @@ export const SpectrogramCanvas = forwardRef<
         y: number;
         isFundamental: boolean;
         alpha: number;
+        harmonicIndex: number;
       }> = [];
 
       detectedHarmonics.forEach(({ fundamental, harmonics, strength }) => {
@@ -792,7 +814,7 @@ export const SpectrogramCanvas = forwardRef<
             harmonicStrength * (isFundamental ? 1.5 : 1.2),
           );
 
-          allMarkers.push({ freq, y, isFundamental, alpha });
+          allMarkers.push({ freq, y, isFundamental, alpha, harmonicIndex: index + 1 });
         });
       });
 
@@ -810,7 +832,7 @@ export const SpectrogramCanvas = forwardRef<
         }
       });
 
-      filteredMarkers.forEach(({ freq, y, isFundamental, alpha }) => {
+      filteredMarkers.forEach(({ freq, y, isFundamental, alpha, harmonicIndex }) => {
         ctx.strokeStyle = `hsl(${primaryColor} / ${alpha})`;
         ctx.lineWidth = isFundamental ? 2 : 1.5;
         ctx.setLineDash(isFundamental ? [8, 4] : [4, 2]);
@@ -820,13 +842,18 @@ export const SpectrogramCanvas = forwardRef<
         ctx.lineTo(padding.left + chartWidth, y);
         ctx.stroke();
 
+        // Build label: "H1 Fund. 131Hz" or "H3 5th 393Hz"
+        const intervalName = HARMONIC_LABELS[harmonicIndex] || "";
+        const hzLabel = `${Math.round(freq)}`;
+        const label = `H${harmonicIndex} ${intervalName} ${hzLabel}`;
+
         ctx.fillStyle = `hsl(${primaryColor} / ${Math.min(0.9, alpha + 0.2)})`;
         ctx.font = isFundamental
           ? "bold 11px Inter, sans-serif"
           : "10px Inter, sans-serif";
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
-        ctx.fillText(`${Math.round(freq)}`, 2, y - 2);
+        ctx.fillText(label, 2, y - 2);
       });
 
       ctx.setLineDash([]);
@@ -950,6 +977,72 @@ export const SpectrogramCanvas = forwardRef<
       return [];
     };
 
+    const drawTargetGuide = (
+      ctx: CanvasRenderingContext2D,
+      padding: { top: number; right: number; bottom: number; left: number },
+      chartWidth: number,
+      chartHeight: number,
+    ) => {
+      if (!targetHarmonic || !spectrogramData || spectrogramData.frequencies.length === 0) return;
+
+      const detectedHarmonics = detectDominantFrequencies(spectrogramData.frequencies);
+      if (detectedHarmonics.length === 0) return;
+
+      const { fundamental } = detectedHarmonics[0];
+      const targetFreq = fundamental * targetHarmonic;
+
+      if (targetFreq < minFrequency || targetFreq > maxFrequency) return;
+
+      const logMin = Math.log10(minFrequency);
+      const logMax = Math.log10(maxFrequency);
+      const logFreq = Math.log10(targetFreq);
+      const normalizedY = 1 - (logFreq - logMin) / (logMax - logMin);
+      const targetY = padding.top + normalizedY * chartHeight;
+
+      // Check if the target harmonic is currently being produced
+      const { harmonics } = detectedHarmonics[0];
+      const isHitting = harmonics.some(({ freq }) => {
+        const ratio = freq / targetFreq;
+        return ratio > 0.95 && ratio < 1.05;
+      });
+
+      // Draw target line
+      const guideColor = isHitting ? "rgba(0, 255, 120, 0.8)" : "rgba(255, 200, 0, 0.6)";
+      const glowColor = isHitting ? "rgba(0, 255, 120, 0.15)" : "rgba(255, 200, 0, 0.08)";
+
+      // Glow band around target
+      ctx.fillStyle = glowColor;
+      const bandHeight = isHitting ? 16 : 10;
+      ctx.fillRect(padding.left, targetY - bandHeight / 2, chartWidth, bandHeight);
+
+      // Target line
+      ctx.strokeStyle = guideColor;
+      ctx.lineWidth = isHitting ? 2.5 : 1.5;
+      ctx.setLineDash(isHitting ? [] : [6, 3]);
+      ctx.beginPath();
+      ctx.moveTo(padding.left, targetY);
+      ctx.lineTo(padding.left + chartWidth, targetY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Target label on right side
+      const intervalName = HARMONIC_LABELS[targetHarmonic] || "";
+      const label = `→ H${targetHarmonic} ${intervalName} ${Math.round(targetFreq)}Hz`;
+      ctx.fillStyle = guideColor;
+      ctx.font = "bold 11px Inter, sans-serif";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      ctx.fillText(label, padding.left + chartWidth - 4, targetY - 8);
+
+      // Hit indicator
+      if (isHitting) {
+        ctx.fillStyle = "rgba(0, 255, 120, 0.9)";
+        ctx.font = "bold 12px Inter, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("✓", padding.left + chartWidth - 60, targetY - 8);
+      }
+    };
+
     const drawPlaybackIndicator = (
       ctx: CanvasRenderingContext2D,
       padding: { top: number; right: number; bottom: number; left: number },
@@ -998,22 +1091,46 @@ export const SpectrogramCanvas = forwardRef<
       current: number,
       max: number,
     ) => {
-      const computedStyle = getComputedStyle(document.documentElement);
-      const primaryColor = computedStyle.getPropertyValue("--primary");
-      const fgColor = computedStyle.getPropertyValue("--foreground");
+      if (current === 0 && max === 0) return;
 
-      const x = padding.left + 12;
-      const y = padding.top + 18;
+      const x = padding.left + 8;
+      const y = padding.top + 8;
+      const boxWidth = 120;
+      const boxHeight = 40;
 
-      ctx.fillStyle = `hsl(${primaryColor} / 0.9)`;
-      ctx.font = "bold 16px Inter, sans-serif";
+      // Semi-transparent background
+      ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+      ctx.beginPath();
+      ctx.roundRect(x, y, boxWidth, boxHeight, 6);
+      ctx.fill();
+
+      // Border
+      ctx.strokeStyle = current > 0 ? "rgba(0, 200, 255, 0.5)" : "rgba(255, 255, 255, 0.2)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(x, y, boxWidth, boxHeight, 6);
+      ctx.stroke();
+
+      // Overtone count — large number
+      const countColor = current >= 4 ? "rgba(0, 255, 120, 0.95)" :
+                         current >= 2 ? "rgba(0, 200, 255, 0.95)" :
+                         current > 0  ? "rgba(255, 200, 0, 0.95)" :
+                                        "rgba(255, 255, 255, 0.5)";
+      ctx.fillStyle = countColor;
+      ctx.font = "bold 20px Inter, sans-serif";
       ctx.textAlign = "left";
-      ctx.textBaseline = "middle";
-      ctx.fillText(`Overtones: ${current}`, x, y);
+      ctx.textBaseline = "top";
+      ctx.fillText(`${current}`, x + 8, y + 6);
 
-      ctx.fillStyle = `hsl(${fgColor} / 0.7)`;
-      ctx.font = "12px Inter, sans-serif";
-      ctx.fillText(`Max: ${max}`, x, y + 16);
+      // Label
+      ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+      ctx.font = "10px Inter, sans-serif";
+      ctx.fillText("overtones", x + 34, y + 8);
+
+      // Max record
+      ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+      ctx.font = "10px Inter, sans-serif";
+      ctx.fillText(`best: ${max}`, x + 34, y + 22);
     };
 
     const drawRecordingIndicator = (
