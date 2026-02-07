@@ -62,11 +62,22 @@ export default function VocalAnalyzer() {
     error,
     sampleRate,
     audioContext,
+    getAudioContext,
   } = useAudioAnalyzer(audioSettings);
 
   // Debounced auto-frequency adjustment — only recalculates once per second
   // instead of every animation frame (~60fps) to avoid excessive re-renders
   const freqAdjustTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (freqAdjustTimerRef.current) {
+        clearTimeout(freqAdjustTimerRef.current);
+        freqAdjustTimerRef.current = null;
+      }
+    };
+  }, []);
   
   useEffect(() => {
     if (!spectrogramData || spectrogramData.frequencies.length === 0) return;
@@ -355,7 +366,8 @@ export default function VocalAnalyzer() {
 
   const handleExportVideo = async () => {
     const canvas = spectrogramCanvasRef.current?.getCanvas();
-    if (!canvas || !audioBuffer || !audioContext) {
+    const currentAudioContext = getAudioContext();
+    if (!canvas || !audioBuffer || !currentAudioContext) {
       toast({
         variant: 'destructive',
         title: 'Export Failed',
@@ -365,11 +377,12 @@ export default function VocalAnalyzer() {
     }
 
     setIsExportingVideo(true);
+    setConversionProgress(0);
     let videoRecorder: ReturnType<typeof createVideoExportRecorder> | null = null;
     
     try {
-      if (audioContext.state === 'suspended') {
-        await audioContext.resume();
+      if (currentAudioContext.state === 'suspended') {
+        await currentAudioContext.resume();
       }
 
       toast({
@@ -379,7 +392,7 @@ export default function VocalAnalyzer() {
 
       videoRecorder = createVideoExportRecorder({
         canvas,
-        audioContext,
+        audioContext: currentAudioContext,
         fps: 30,
         videoBitsPerSecond: 2500000,
       });
@@ -401,10 +414,24 @@ export default function VocalAnalyzer() {
         );
       });
 
+      // Wait for playback to finish, then stop the recorder.
+      // Also monitor the recorder in case it errors out early.
+      let recordingStopped = false;
+      const recorderEarlyStop = videoRecorder.recordingPromise.then(() => {
+        recordingStopped = true;
+      });
+
       await Promise.race([
-        playbackPromise.then(() => videoRecorder!.stop()),
-        videoRecorder.recordingPromise.then(() => {
-          throw new Error('Recording stopped unexpectedly before playback completed');
+        playbackPromise.then(() => {
+          if (!recordingStopped) {
+            videoRecorder!.stop();
+          }
+        }),
+        recorderEarlyStop.then(() => {
+          // Recorder stopped before playback finished — stop playback too
+          stopPlayback();
+          updateRecordingState('stopped');
+          setPlaybackTime(0);
         }),
       ]);
 
@@ -479,6 +506,7 @@ export default function VocalAnalyzer() {
         videoRecorder.cleanup();
       }
       setIsExportingVideo(false);
+      setConversionProgress(0);
       // Use ref instead of state to avoid stale closure — recordingState
       // captured at render time would not reflect updates made during async export
       if (recordingStateRef.current === 'playing') {

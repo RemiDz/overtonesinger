@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import type { AudioSettings, SpectrogramData } from '@shared/schema';
 
 export function useAudioAnalyzer(settings: AudioSettings) {
@@ -23,6 +23,11 @@ export function useAudioAnalyzer(settings: AudioSettings) {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
+    }
+
+    if (playbackAnimationRef.current) {
+      cancelAnimationFrame(playbackAnimationRef.current);
+      playbackAnimationRef.current = null;
     }
 
     if (scriptProcessorRef.current) {
@@ -216,6 +221,8 @@ export function useAudioAnalyzer(settings: AudioSettings) {
     return duration;
   }, []);
 
+  const playbackAnimationRef = useRef<number | null>(null);
+
   const playRecording = useCallback((
     onPlaybackUpdate?: (currentTime: number) => void, 
     onPlaybackEnd?: () => void,
@@ -247,25 +254,25 @@ export function useAudioAnalyzer(settings: AudioSettings) {
       source.start(0);
       audioSourceNodeRef.current = source;
 
-      let animationId: number;
       const updatePlaybackPosition = () => {
         if (!audioSourceNodeRef.current || !audioContextRef.current) return;
         
         const elapsed = audioContextRef.current.currentTime - playbackStartTime;
         if (elapsed < duration && onPlaybackUpdate) {
           onPlaybackUpdate(elapsed);
-          animationId = requestAnimationFrame(updatePlaybackPosition);
+          playbackAnimationRef.current = requestAnimationFrame(updatePlaybackPosition);
         }
       };
 
       if (onPlaybackUpdate) {
-        animationId = requestAnimationFrame(updatePlaybackPosition);
+        playbackAnimationRef.current = requestAnimationFrame(updatePlaybackPosition);
       }
 
       source.onended = () => {
         audioSourceNodeRef.current = null;
-        if (animationId) {
-          cancelAnimationFrame(animationId);
+        if (playbackAnimationRef.current) {
+          cancelAnimationFrame(playbackAnimationRef.current);
+          playbackAnimationRef.current = null;
         }
         if (onPlaybackEnd) {
           onPlaybackEnd();
@@ -277,6 +284,10 @@ export function useAudioAnalyzer(settings: AudioSettings) {
   }, [audioBuffer, settings.sampleRate]);
 
   const stopPlayback = useCallback(() => {
+    if (playbackAnimationRef.current) {
+      cancelAnimationFrame(playbackAnimationRef.current);
+      playbackAnimationRef.current = null;
+    }
     if (audioSourceNodeRef.current) {
       try {
         audioSourceNodeRef.current.stop();
@@ -296,6 +307,15 @@ export function useAudioAnalyzer(settings: AudioSettings) {
     spectrogramFramesRef.current = { frequencies: [], timeStamps: [] };
   }, [cleanupAudioResources]);
 
+  const getAudioContext = useCallback(() => audioContextRef.current, []);
+
+  // Cleanup all audio resources on unmount
+  useEffect(() => {
+    return () => {
+      cleanupAudioResources();
+    };
+  }, [cleanupAudioResources]);
+
   return {
     startRecording,
     stopRecording,
@@ -308,5 +328,6 @@ export function useAudioAnalyzer(settings: AudioSettings) {
     error,
     sampleRate: settings.sampleRate,
     audioContext: audioContextRef.current,
+    getAudioContext,
   };
 }
