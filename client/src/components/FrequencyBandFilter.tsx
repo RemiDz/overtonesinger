@@ -29,8 +29,30 @@ export function FrequencyBandFilter({
 }: FrequencyBandFilterProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState<"low" | "high" | null>(null);
+  const draggingRef = useRef<"low" | "high" | null>(null);
 
-  // Convert frequency to Y position (logarithmic scale, matching spectrogram)
+  // Keep ref in sync for use in native event listeners
+  useEffect(() => {
+    draggingRef.current = dragging;
+  }, [dragging]);
+
+  // Block ALL touch scrolling/pull-to-refresh while dragging.
+  // Must be a native listener with { passive: false } — React's
+  // synthetic onTouchMove cannot call preventDefault() in modern browsers.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const blockTouch = (e: TouchEvent) => {
+      if (draggingRef.current) {
+        e.preventDefault();
+      }
+    };
+
+    el.addEventListener("touchmove", blockTouch, { passive: false });
+    return () => el.removeEventListener("touchmove", blockTouch);
+  }, [enabled]);
+
   const freqToY = useCallback(
     (freq: number, chartHeight: number): number => {
       const logMin = Math.log(minFrequency);
@@ -42,7 +64,6 @@ export function FrequencyBandFilter({
     [minFrequency, maxFrequency, padding.top],
   );
 
-  // Convert Y position to frequency (inverse log scale)
   const yToFreq = useCallback(
     (y: number, chartHeight: number): number => {
       const normalized = 1 - (y - padding.top) / chartHeight;
@@ -72,6 +93,7 @@ export function FrequencyBandFilter({
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
       if (!dragging || !containerRef.current) return;
+      e.preventDefault();
       const rect = containerRef.current.getBoundingClientRect();
       const y = e.clientY - rect.top;
       const chartHeight = getChartHeight();
@@ -102,48 +124,65 @@ export function FrequencyBandFilter({
   const lowY = freqToY(filterBand.lowFreq, chartHeight);
   const highY = freqToY(filterBand.highFreq, chartHeight);
 
-  const formatFreq = (f: number) => (f >= 1000 ? `${(f / 1000).toFixed(1)}k` : `${Math.round(f)}`);
+  const formatFreq = (f: number) =>
+    f >= 1000 ? `${(f / 1000).toFixed(1)}k` : `${Math.round(f)}`;
+
+  // Larger touch target on mobile (32px vs 16px)
+  const handleHeight = 32;
+  const halfHandle = handleHeight / 2;
 
   return (
     <div
       ref={containerRef}
-      className="absolute inset-0 pointer-events-none"
-      style={{ zIndex: 20 }}
+      className="absolute inset-0"
+      style={{
+        zIndex: 20,
+        // Allow pointer events on the whole container while dragging
+        // so the finger can move freely without leaving the handle
+        pointerEvents: dragging ? "auto" : "none",
+        touchAction: "none",
+      }}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
     >
       {/* Dimmed region above the high-frequency handle (muted highs) */}
       <div
-        className="absolute pointer-events-none"
+        className="absolute"
         style={{
           left: padding.left,
           top: padding.top,
           right: padding.right,
           height: Math.max(0, highY - padding.top),
           background: "rgba(0, 0, 0, 0.55)",
+          pointerEvents: "none",
         }}
       />
 
       {/* Dimmed region below the low-frequency handle (muted lows) */}
       <div
-        className="absolute pointer-events-none"
+        className="absolute"
         style={{
           left: padding.left,
           top: lowY,
           right: padding.right,
           height: Math.max(0, padding.top + chartHeight - lowY),
           background: "rgba(0, 0, 0, 0.55)",
+          pointerEvents: "none",
         }}
       />
 
-      {/* High frequency handle (top of band) — drag down to lower the ceiling */}
+      {/* High frequency handle (top of band) */}
       <div
-        className="absolute pointer-events-auto cursor-ns-resize"
+        className="absolute"
         style={{
           left: padding.left,
           right: padding.right,
-          top: highY - 8,
-          height: 16,
+          top: highY - halfHandle,
+          height: handleHeight,
+          cursor: "ns-resize",
+          pointerEvents: "auto",
+          touchAction: "none",
         }}
         onPointerDown={handlePointerDown("high")}
       >
@@ -151,27 +190,30 @@ export function FrequencyBandFilter({
           className="w-full h-[2px] absolute top-1/2 -translate-y-1/2"
           style={{ background: "rgba(0, 200, 255, 0.8)" }}
         />
-        {/* Handle grip */}
         <div
           className="absolute top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium select-none"
           style={{
             right: 0,
             background: "rgba(0, 200, 255, 0.9)",
             color: "#000",
+            touchAction: "none",
           }}
         >
           ▼ {formatFreq(filterBand.highFreq)} Hz
         </div>
       </div>
 
-      {/* Low frequency handle (bottom of band) — drag up to raise the floor */}
+      {/* Low frequency handle (bottom of band) */}
       <div
-        className="absolute pointer-events-auto cursor-ns-resize"
+        className="absolute"
         style={{
           left: padding.left,
           right: padding.right,
-          top: lowY - 8,
-          height: 16,
+          top: lowY - halfHandle,
+          height: handleHeight,
+          cursor: "ns-resize",
+          pointerEvents: "auto",
+          touchAction: "none",
         }}
         onPointerDown={handlePointerDown("low")}
       >
@@ -179,13 +221,13 @@ export function FrequencyBandFilter({
           className="w-full h-[2px] absolute top-1/2 -translate-y-1/2"
           style={{ background: "rgba(255, 180, 0, 0.8)" }}
         />
-        {/* Handle grip */}
         <div
           className="absolute top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium select-none"
           style={{
             right: 0,
             background: "rgba(255, 180, 0, 0.9)",
             color: "#000",
+            touchAction: "none",
           }}
         >
           ▲ {formatFreq(filterBand.lowFreq)} Hz
