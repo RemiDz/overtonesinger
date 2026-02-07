@@ -42,6 +42,14 @@ const HARMONIC_LABELS: Record<number, string> = {
   6: "5th",
   7: "m7",
   8: "3·Oct",
+  9: "M2",
+  10: "M3",
+  11: "TT",
+  12: "5th",
+  13: "m6",
+  14: "m7",
+  15: "M7",
+  16: "4·Oct",
 };
 
 export interface SpectrogramCanvasHandle {
@@ -858,7 +866,11 @@ export const SpectrogramCanvas = forwardRef<
 
       ctx.setLineDash([]);
 
-      const overtoneCount = allMarkers.filter((m) => !m.isFundamental).length;
+      // Count overtones from the detection result (not filtered markers)
+      // to get the true count regardless of what's visible on screen
+      const overtoneCount = detectedHarmonics.length > 0
+        ? detectedHarmonics[0].harmonics.length - 1  // subtract fundamental
+        : 0;
       return overtoneCount;
     };
 
@@ -936,7 +948,7 @@ export const SpectrogramCanvas = forwardRef<
 
       const minHarmonicStrength = fundamentalMagnitude * 0.08;
 
-      for (let n = 2; n <= 8; n++) {
+      for (let n = 2; n <= 16; n++) {
         const expectedHarmonic = fundamental * n;
         if (expectedHarmonic > sampleRate / 2) break;
 

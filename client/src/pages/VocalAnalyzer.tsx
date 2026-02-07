@@ -27,6 +27,8 @@ export default function VocalAnalyzer() {
   const [targetHarmonic, setTargetHarmonic] = useState<number | null>(null);
   const [filterEnabled, setFilterEnabled] = useState(false);
   const [filterBand, setFilterBand] = useState<FilterBand>({ lowFreq: 60, highFreq: 8000 });
+  const [loopPlayback, setLoopPlayback] = useState(false);
+  const loopPlaybackRef = useRef(false);
 
   // Helper that keeps the ref in sync with state for use in async closures
   const updateRecordingState = useCallback((state: RecordingState) => {
@@ -206,21 +208,35 @@ export default function VocalAnalyzer() {
     }
   };
 
-  const handlePlay = () => {
-    if (recordingState === 'stopped' && audioBuffer) {
+  const handlePlay = useCallback(() => {
+    if ((recordingState === 'stopped' || recordingStateRef.current === 'stopped') && audioBuffer) {
       setPlaybackTime(0);
-      playRecording(
-        (time) => setPlaybackTime(time),
-        () => {
+
+      const onEnd = () => {
+        if (loopPlaybackRef.current) {
+          // Re-trigger playback for loop
+          setPlaybackTime(0);
+          playRecording(
+            (time) => setPlaybackTime(time),
+            onEnd,
+            undefined,
+            filterEnabled ? filterBand : null
+          );
+        } else {
           updateRecordingState('stopped');
           setPlaybackTime(0);
-        },
+        }
+      };
+
+      playRecording(
+        (time) => setPlaybackTime(time),
+        onEnd,
         undefined,
         filterEnabled ? filterBand : null
       );
       updateRecordingState('playing');
     }
-  };
+  }, [recordingState, audioBuffer, playRecording, filterEnabled, filterBand, updateRecordingState]);
 
   const handleStop = () => {
     if (recordingState === 'recording') {
@@ -233,9 +249,14 @@ export default function VocalAnalyzer() {
         visibleDuration: duration || 10,
       });
     } else if (recordingState === 'playing') {
+      // Temporarily disable loop so the onended callback doesn't restart playback
+      const wasLooping = loopPlaybackRef.current;
+      loopPlaybackRef.current = false;
       stopPlayback();
       updateRecordingState('stopped');
       setPlaybackTime(0);
+      // Restore the loop setting (user's toggle stays as-is)
+      loopPlaybackRef.current = wasLooping;
     }
   };
 
@@ -245,6 +266,10 @@ export default function VocalAnalyzer() {
     setCurrentTime(0);
     setPlaybackTime(0);
     setTotalDuration(0);
+    setFilterEnabled(false);
+    setFilterBand({ lowFreq: 60, highFreq: 8000 });
+    setTargetHarmonic(null);
+    setLoopPlayback(false);
     setViewportSettings({
       zoom: 100,
       scrollPosition: 0,
@@ -319,6 +344,12 @@ export default function VocalAnalyzer() {
       // Reset band to full range when disabling
       setFilterBand({ lowFreq: audioSettings.minFrequency, highFreq: audioSettings.maxFrequency });
     }
+  };
+
+  const toggleLoop = () => {
+    const next = !loopPlayback;
+    setLoopPlayback(next);
+    loopPlaybackRef.current = next;
   };
 
   const getColorSchemeLabel = () => {
@@ -590,6 +621,8 @@ export default function VocalAnalyzer() {
             hasRecording={!!audioBuffer}
             disabled={isProcessing}
             isExportingVideo={isExportingVideo}
+            loopEnabled={loopPlayback}
+            onToggleLoop={toggleLoop}
           />
           <div className="flex items-center gap-2 sm:gap-4">
             <div className="text-sm font-medium text-muted-foreground">

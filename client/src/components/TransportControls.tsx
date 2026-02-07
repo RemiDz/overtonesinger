@@ -1,4 +1,4 @@
-import { Circle, Play, Square, Download, Image, RotateCcw, Video } from 'lucide-react';
+import { Circle, Play, Square, Download, Image, RotateCcw, Video, Repeat } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { RecordingState } from '@shared/schema';
 
@@ -14,6 +14,8 @@ interface TransportControlsProps {
   hasRecording?: boolean;
   disabled?: boolean;
   isExportingVideo?: boolean;
+  loopEnabled?: boolean;
+  onToggleLoop?: () => void;
 }
 
 export function TransportControls({
@@ -28,6 +30,8 @@ export function TransportControls({
   hasRecording = false,
   disabled = false,
   isExportingVideo = false,
+  loopEnabled = false,
+  onToggleLoop,
 }: TransportControlsProps) {
   const isRecording = recordingState === 'recording';
   const isPlaying = recordingState === 'playing';
@@ -60,6 +64,19 @@ export function TransportControls({
         data-testid="button-play"
       >
         <Play className={`h-5 w-5 ${isPlaying ? 'fill-current' : ''}`} />
+      </Button>
+
+      {/* Loop Button */}
+      <Button
+        size="icon"
+        variant={loopEnabled ? 'default' : 'outline'}
+        onClick={onToggleLoop}
+        disabled={disabled || isRecording}
+        className="w-10 h-10 rounded-full"
+        aria-label={loopEnabled ? 'Disable loop' : 'Enable loop'}
+        data-testid="button-loop"
+      >
+        <Repeat className={`h-4 w-4 ${loopEnabled ? 'text-primary-foreground' : ''}`} />
       </Button>
 
       {/* Stop Button */}
