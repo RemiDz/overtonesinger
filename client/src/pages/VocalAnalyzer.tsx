@@ -208,19 +208,16 @@ export default function VocalAnalyzer() {
     if ((recordingState === 'stopped' || recordingStateRef.current === 'stopped') && audioBuffer) {
       setPlaybackTime(0);
 
-      // Only apply audio filter if the band is narrower than the full range
-      const isFiltered = filterBand.lowFreq > audioSettings.minFrequency + 10 ||
-                         filterBand.highFreq < audioSettings.maxFrequency - 10;
-
+      // Always pass the filter band — the audio engine skips filters
+      // when the band covers the full audible range already
       const onEnd = () => {
         if (loopPlaybackRef.current) {
-          // Re-trigger playback for loop
           setPlaybackTime(0);
           playRecording(
             (time) => setPlaybackTime(time),
             onEnd,
             undefined,
-            isFiltered ? filterBand : null
+            filterBand
           );
         } else {
           updateRecordingState('stopped');
@@ -232,11 +229,11 @@ export default function VocalAnalyzer() {
         (time) => setPlaybackTime(time),
         onEnd,
         undefined,
-        isFiltered ? filterBand : null
+        filterBand
       );
       updateRecordingState('playing');
     }
-  }, [recordingState, audioBuffer, playRecording, filterBand, audioSettings.minFrequency, audioSettings.maxFrequency, updateRecordingState]);
+  }, [recordingState, audioBuffer, playRecording, filterBand, updateRecordingState]);
 
   const handleStop = () => {
     if (recordingState === 'recording') {
