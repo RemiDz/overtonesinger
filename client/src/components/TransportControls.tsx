@@ -1,5 +1,6 @@
-import { Circle, Play, Square, Download, Image, RotateCcw, Video, Repeat } from 'lucide-react';
+import { Circle, Play, Square, Download, Image, RotateCcw, Video, Repeat, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { RecordingState } from '@shared/schema';
 
 interface TransportControlsProps {
@@ -16,6 +17,7 @@ interface TransportControlsProps {
   isExportingVideo?: boolean;
   loopEnabled?: boolean;
   onToggleLoop?: () => void;
+  isPro?: boolean;
 }
 
 export function TransportControls({
@@ -32,6 +34,7 @@ export function TransportControls({
   isExportingVideo = false,
   loopEnabled = false,
   onToggleLoop,
+  isPro = false,
 }: TransportControlsProps) {
   const isRecording = recordingState === 'recording';
   const isPlaying = recordingState === 'playing';
@@ -109,41 +112,65 @@ export function TransportControls({
         <>
           <div className="w-px h-6 sm:h-8 bg-border mx-0.5 sm:mx-1" />
           
-          <Button
-            size="icon"
-            variant="outline"
-            onClick={onExportWAV}
-            disabled={disabled || isRecording || isPlaying}
-            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full"
-            aria-label="Export WAV"
-            data-testid="button-export-wav"
-          >
-            <Download className="h-4 w-4 sm:h-5 sm:w-5" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={onExportWAV}
+                disabled={disabled || isRecording || isPlaying}
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full relative ${!isPro ? 'opacity-70' : ''}`}
+                aria-label={isPro ? 'Export WAV' : 'Export WAV (Pro)'}
+                data-testid="button-export-wav"
+              >
+                <Download className="h-4 w-4 sm:h-5 sm:w-5" />
+                {!isPro && <Lock className="h-2.5 w-2.5 absolute top-0.5 right-0.5 text-amber-400" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{isPro ? 'Export WAV' : 'Export WAV (Pro)'}</p>
+            </TooltipContent>
+          </Tooltip>
 
-          <Button
-            size="icon"
-            variant="outline"
-            onClick={onExportPNG}
-            disabled={disabled}
-            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full"
-            aria-label="Export PNG"
-            data-testid="button-export-png"
-          >
-            <Image className="h-4 w-4 sm:h-5 sm:w-5" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={onExportPNG}
+                disabled={disabled}
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full relative ${!isPro ? 'opacity-70' : ''}`}
+                aria-label={isPro ? 'Export PNG' : 'Export PNG (Pro)'}
+                data-testid="button-export-png"
+              >
+                <Image className="h-4 w-4 sm:h-5 sm:w-5" />
+                {!isPro && <Lock className="h-2.5 w-2.5 absolute top-0.5 right-0.5 text-amber-400" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{isPro ? 'Export PNG' : 'Export PNG (Pro)'}</p>
+            </TooltipContent>
+          </Tooltip>
 
-          <Button
-            size="icon"
-            variant="outline"
-            onClick={onExportVideo}
-            disabled={disabled || isRecording || isPlaying || isExportingVideo}
-            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full"
-            aria-label="Export Video"
-            data-testid="button-export-video"
-          >
-            <Video className="h-4 w-4 sm:h-5 sm:w-5" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={onExportVideo}
+                disabled={disabled || isRecording || isPlaying || isExportingVideo}
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full relative ${!isPro ? 'opacity-70' : ''}`}
+                aria-label={isPro ? 'Export Video' : 'Export Video (Pro)'}
+                data-testid="button-export-video"
+              >
+                <Video className="h-4 w-4 sm:h-5 sm:w-5" />
+                {!isPro && <Lock className="h-2.5 w-2.5 absolute top-0.5 right-0.5 text-amber-400" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{isPro ? 'Export Video' : 'Export Video (Pro)'}</p>
+            </TooltipContent>
+          </Tooltip>
         </>
       )}
     </div>

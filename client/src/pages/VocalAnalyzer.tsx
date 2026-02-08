@@ -4,18 +4,22 @@ import { TransportControls } from '@/components/TransportControls';
 import { SliderControl } from '@/components/SliderControl';
 import { ZoomControls } from '@/components/ZoomControls';
 import { FrequencyBandFilter, type FilterBand } from '@/components/FrequencyBandFilter';
+import { UpgradeModal } from '@/components/UpgradeModal';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
+import { useProStatus } from '@/hooks/useProStatus';
 import { useToast } from '@/hooks/use-toast';
 import { exportToWAV, downloadBlob, exportCanvasToPNG } from '@/lib/audioExport';
 import { createVideoExportRecorder, downloadVideoBlob } from '@/lib/videoExport';
 import { convertWebMToMP4, isFFmpegAvailable } from '@/lib/ffmpegConverter';
-import { Sun, Contrast, Palette, Activity, Heart, Focus, Target, Maximize, Minimize } from 'lucide-react';
+import { Sun, Contrast, Palette, Activity, Heart, Focus, Target, Maximize, Minimize, Star, Lock, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { RecordingState, AudioSettings, ViewportSettings, IntensityScaleMode, ColorScheme, FFTSize } from '@shared/schema';
 
 export default function VocalAnalyzer() {
   const { toast } = useToast();
+  const { isPro: isProUser, isActivating, activate, deactivate } = useProStatus();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const spectrogramCanvasRef = useRef<SpectrogramCanvasHandle>(null);
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
   const recordingStateRef = useRef<RecordingState>('idle');
@@ -303,6 +307,11 @@ export default function VocalAnalyzer() {
   };
 
   const cycleColorScheme = () => {
+    if (!isProUser) {
+      // Free users only get the default scheme — show upgrade modal
+      setShowUpgradeModal(true);
+      return;
+    }
     const schemes: ColorScheme[] = ['default', 'warm', 'cool', 'monochrome'];
     const currentIndex = schemes.indexOf(audioSettings.colorScheme);
     const nextIndex = (currentIndex + 1) % schemes.length;
@@ -317,6 +326,10 @@ export default function VocalAnalyzer() {
   };
 
   const cycleTargetHarmonic = () => {
+    if (!isProUser) {
+      setShowUpgradeModal(true);
+      return;
+    }
     // Cycle: off → H2 → H3 → H4 → H5 → H6 → H7 → H8 → off
     if (targetHarmonic === null) {
       setTargetHarmonic(2);
@@ -425,6 +438,10 @@ export default function VocalAnalyzer() {
   };
 
   const handleExportWAV = () => {
+    if (!isProUser) {
+      setShowUpgradeModal(true);
+      return;
+    }
     if (!audioBuffer) {
       toast({
         variant: 'destructive',
@@ -452,6 +469,10 @@ export default function VocalAnalyzer() {
   };
 
   const handleExportPNG = () => {
+    if (!isProUser) {
+      setShowUpgradeModal(true);
+      return;
+    }
     const canvas = spectrogramCanvasRef.current?.getCanvas();
     if (!canvas) {
       toast({
@@ -479,6 +500,10 @@ export default function VocalAnalyzer() {
   };
 
   const handleExportVideo = async () => {
+    if (!isProUser) {
+      setShowUpgradeModal(true);
+      return;
+    }
     const canvas = spectrogramCanvasRef.current?.getCanvas();
     const currentAudioContext = getAudioContext();
     if (!canvas || !audioBuffer || !currentAudioContext) {
@@ -660,11 +685,38 @@ export default function VocalAnalyzer() {
             isExportingVideo={isExportingVideo}
             loopEnabled={loopPlayback}
             onToggleLoop={toggleLoop}
+            isPro={isProUser}
           />
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <div className="text-sm font-medium text-muted-foreground hidden sm:block">
               {getStatusText()}
             </div>
+            {/* Pro Button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={isProUser ? 'outline' : 'default'}
+                  size="icon"
+                  onClick={() => !isProUser && setShowUpgradeModal(true)}
+                  data-testid="button-pro"
+                  className={`h-8 w-8 sm:h-10 sm:w-10 ${
+                    isProUser
+                      ? 'text-amber-400 border-amber-400/30 hover:text-amber-300'
+                      : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0'
+                  }`}
+                >
+                  {isProUser ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Star className="h-4 w-4 fill-current" />
+                  )}
+                  <span className="sr-only">{isProUser ? 'Pro Active' : 'Upgrade to Pro'}</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{isProUser ? 'Pro Active' : 'Upgrade to Pro'}</p>
+              </TooltipContent>
+            </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -743,14 +795,15 @@ export default function VocalAnalyzer() {
                   size="icon"
                   onClick={cycleColorScheme}
                   data-testid="button-color-scheme"
-                  className={audioSettings.colorScheme === 'default' ? 'relative text-[#00a8ff] dark:text-[#00a8ff]' : 'relative'}
+                  className={`${audioSettings.colorScheme === 'default' ? 'relative text-[#00a8ff] dark:text-[#00a8ff]' : 'relative'} ${!isProUser ? 'opacity-70' : ''}`}
                 >
                   <Palette className="h-4 w-4" />
+                  {!isProUser && <Lock className="h-2.5 w-2.5 absolute top-0.5 right-0.5 text-amber-400" />}
                   <span className="sr-only">Color Scheme: {getColorSchemeLabel()}</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Color: {getColorSchemeLabel()}</p>
+                <p>{isProUser ? `Color: ${getColorSchemeLabel()}` : 'Color Schemes (Pro)'}</p>
               </TooltipContent>
             </Tooltip>
             <Tooltip>
@@ -777,14 +830,15 @@ export default function VocalAnalyzer() {
                   size="icon"
                   onClick={cycleTargetHarmonic}
                   data-testid="button-target-harmonic"
-                  className={targetHarmonic !== null ? 'relative text-[#ffc800] dark:text-[#ffc800]' : 'relative'}
+                  className={`${targetHarmonic !== null ? 'relative text-[#ffc800] dark:text-[#ffc800]' : 'relative'} ${!isProUser ? 'opacity-70' : ''}`}
                 >
                   <Target className="h-4 w-4" />
+                  {!isProUser && <Lock className="h-2.5 w-2.5 absolute top-0.5 right-0.5 text-amber-400" />}
                   <span className="sr-only">Target: {targetHarmonic ? `H${targetHarmonic}` : 'Off'}</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Target: {targetHarmonic ? `H${targetHarmonic}` : 'Off'}</p>
+                <p>{isProUser ? `Target: ${targetHarmonic ? `H${targetHarmonic}` : 'Off'}` : 'Harmonic Target (Pro)'}</p>
               </TooltipContent>
             </Tooltip>
           </div>
@@ -811,6 +865,7 @@ export default function VocalAnalyzer() {
           colorScheme={audioSettings.colorScheme}
           sampleRate={sampleRate}
           targetHarmonic={targetHarmonic}
+          showFrequencyMarkers={isProUser}
         />
         <FrequencyBandFilter
           enabled={true}
@@ -835,6 +890,14 @@ export default function VocalAnalyzer() {
           disabled={recordingState === 'idle'}
         />
       </div>
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        open={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        onActivate={activate}
+        isActivating={isActivating}
+      />
     </div>
   );
 }
