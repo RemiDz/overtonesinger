@@ -18,8 +18,11 @@ if (typeof window === "undefined") {
       return;
     }
 
-    // Pass through LemonSqueezy API requests without adding COEP/COOP headers
-    if (e.request.url.includes("api.lemonsqueezy.com")) {
+    // Only add COEP/COOP headers to same-origin navigation and resource
+    // requests. Cross-origin API calls (e.g. LemonSqueezy) are passed
+    // through untouched so they aren't blocked by the isolation policy.
+    const requestUrl = new URL(e.request.url);
+    if (requestUrl.origin !== self.location.origin) {
       return;
     }
 
