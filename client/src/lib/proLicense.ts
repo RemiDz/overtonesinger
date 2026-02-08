@@ -38,7 +38,10 @@ export async function activateLicense(licenseKey: string): Promise<{ success: bo
   try {
     const response = await fetch('https://api.lemonsqueezy.com/v1/licenses/activate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json',
+      },
       body: new URLSearchParams({
         license_key: licenseKey,
         instance_name: 'Overtone Singer Web',
@@ -46,6 +49,7 @@ export async function activateLicense(licenseKey: string): Promise<{ success: bo
     });
 
     const data = await response.json();
+    console.log('License activation response:', data);
 
     if (data.valid || data.activated) {
       saveLicenseState({
@@ -62,6 +66,7 @@ export async function activateLicense(licenseKey: string): Promise<{ success: bo
       return { success: false, error: data.error || 'Invalid license key' };
     }
   } catch (err) {
+    console.error('License activation error:', err);
     return { success: false, error: 'Network error. Please try again.' };
   }
 }
@@ -80,11 +85,15 @@ export async function validateLicense(licenseKey?: string): Promise<{ success: b
 
     const response = await fetch('https://api.lemonsqueezy.com/v1/licenses/validate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json',
+      },
       body: new URLSearchParams(body),
     });
 
     const data = await response.json();
+    console.log('License validation response:', data);
 
     if (data.valid) {
       saveLicenseState({
@@ -97,7 +106,8 @@ export async function validateLicense(licenseKey?: string): Promise<{ success: b
       saveLicenseState({ isActive: false, licenseKey: null, instanceId: null });
       return { success: false, error: 'License key is no longer valid' };
     }
-  } catch {
+  } catch (err) {
+    console.error('License validation error:', err);
     // If offline, trust the stored state
     return { success: state.isActive };
   }
