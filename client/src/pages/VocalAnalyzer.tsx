@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { exportToWAV, downloadBlob, exportCanvasToPNG } from '@/lib/audioExport';
 import { createVideoExportRecorder, downloadVideoBlob } from '@/lib/videoExport';
 import { convertWebMToMP4, isFFmpegAvailable } from '@/lib/ffmpegConverter';
-import { Sun, Contrast, Palette, Activity, Heart, Focus, Target, Maximize, Minimize, Star, Lock, Check } from 'lucide-react';
+import { Sun, Contrast, Palette, Activity, Focus, Target, Maximize, Minimize, Star, Lock, Check, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { RecordingState, AudioSettings, ViewportSettings, IntensityScaleMode, ColorScheme, FFTSize } from '@shared/schema';
@@ -33,6 +33,11 @@ export default function VocalAnalyzer() {
   const [loopPlayback, setLoopPlayback] = useState(false);
   const loopPlaybackRef = useRef(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showSessionLimitModal, setShowSessionLimitModal] = useState(false);
+  const sessionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Free session time limit: 5 minutes (300 seconds)
+  const FREE_SESSION_LIMIT_MS = 5 * 60 * 1000;
 
   // Helper that keeps the ref in sync with state for use in async closures
   const updateRecordingState = useCallback((state: RecordingState) => {
@@ -191,6 +196,14 @@ export default function VocalAnalyzer() {
     }
   }, [recordingState, spectrogramData]);
 
+  // Clear the session timer when it's no longer needed
+  const clearSessionTimer = useCallback(() => {
+    if (sessionTimerRef.current) {
+      clearTimeout(sessionTimerRef.current);
+      sessionTimerRef.current = null;
+    }
+  }, []);
+
   const handleRecord = async () => {
     if (recordingState === 'idle' || recordingState === 'stopped') {
       try {
@@ -198,6 +211,23 @@ export default function VocalAnalyzer() {
         updateRecordingState('recording');
         setCurrentTime(0);
         setTotalDuration(0);
+
+        // Start session timer for free users
+        if (!isProUser) {
+          clearSessionTimer();
+          sessionTimerRef.current = setTimeout(() => {
+            // Auto-stop recording at the limit
+            const duration = stopRecording();
+            updateRecordingState('stopped');
+            setTotalDuration(duration);
+            setViewportSettings({
+              zoom: 100,
+              scrollPosition: 0,
+              visibleDuration: duration || 10,
+            });
+            setShowSessionLimitModal(true);
+          }, FREE_SESSION_LIMIT_MS);
+        }
       } catch (err) {
         toast({
           variant: 'destructive',
@@ -241,6 +271,7 @@ export default function VocalAnalyzer() {
 
   const handleStop = () => {
     if (recordingState === 'recording') {
+      clearSessionTimer();
       const duration = stopRecording();
       updateRecordingState('stopped');
       setTotalDuration(duration);
@@ -250,18 +281,17 @@ export default function VocalAnalyzer() {
         visibleDuration: duration || 10,
       });
     } else if (recordingState === 'playing') {
-      // Temporarily disable loop so the onended callback doesn't restart playback
-      const wasLooping = loopPlaybackRef.current;
+      // Fully disable loop so the onended callback cannot restart playback
       loopPlaybackRef.current = false;
+      setLoopPlayback(false);
       stopPlayback();
       updateRecordingState('stopped');
       setPlaybackTime(0);
-      // Restore the loop setting (user's toggle stays as-is)
-      loopPlaybackRef.current = wasLooping;
     }
   };
 
   const handleReset = () => {
+    clearSessionTimer();
     reset();
     updateRecordingState('idle');
     setCurrentTime(0);
@@ -348,6 +378,10 @@ export default function VocalAnalyzer() {
   }, [recordingState, updatePlaybackFilter]);
 
   const toggleLoop = () => {
+    if (!isProUser) {
+      setShowUpgradeModal(true);
+      return;
+    }
     const next = !loopPlayback;
     setLoopPlayback(next);
     loopPlaybackRef.current = next;
@@ -722,23 +756,6 @@ export default function VocalAnalyzer() {
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => window.open('https://www.paypal.com/donate/?hosted_button_id=ABRWM7GB438R4', '_blank', 'noopener,noreferrer')}
-                  data-testid="button-donate"
-                  className="text-pink-500 hover:text-pink-600 dark:text-pink-400 dark:hover:text-pink-500 h-8 w-8 sm:h-10 sm:w-10"
-                >
-                  <Heart className="h-4 w-4 fill-current" />
-                  <span className="sr-only">Donate</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Support this project</p>
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
                   onClick={toggleFullscreen}
                   data-testid="button-fullscreen"
                   className="h-8 w-8 sm:h-10 sm:w-10"
@@ -874,6 +891,8 @@ export default function VocalAnalyzer() {
           filterBand={filterBand}
           onFilterChange={handleFilterChange}
           padding={{ top: 12, right: 8, bottom: 24, left: 26 }}
+          isPro={isProUser}
+          onUpgradeClick={() => setShowUpgradeModal(true)}
         />
       </div>
 
@@ -898,6 +917,44 @@ export default function VocalAnalyzer() {
         onActivate={activate}
         isActivating={isActivating}
       />
+
+      {/* Session Limit Modal */}
+      {showSessionLimitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowSessionLimitModal(false)}
+          />
+          <div className="relative bg-card border border-border rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+            <div className="p-6 text-center">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/10 mb-4">
+                <Timer className="h-6 w-6 text-amber-400" />
+              </div>
+              <h2 className="text-lg font-bold text-foreground mb-2">Free session limit reached</h2>
+              <p className="text-sm text-muted-foreground mb-6">
+                Free sessions are limited to 5 minutes. Upgrade to Pro for unlimited session length.
+              </p>
+              <Button
+                className="w-full h-11 text-base font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0 mb-3"
+                onClick={() => {
+                  setShowSessionLimitModal(false);
+                  setShowUpgradeModal(true);
+                }}
+              >
+                <Star className="h-4 w-4 mr-2 fill-current" />
+                Upgrade to Pro
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full"
+                onClick={() => setShowSessionLimitModal(false)}
+              >
+                Continue with free version
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

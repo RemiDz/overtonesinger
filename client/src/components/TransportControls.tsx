@@ -70,17 +70,25 @@ export function TransportControls({
       </Button>
 
       {/* Loop Button */}
-      <Button
-        size="icon"
-        variant={loopEnabled ? 'default' : 'outline'}
-        onClick={onToggleLoop}
-        disabled={disabled || isRecording}
-        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full"
-        aria-label={loopEnabled ? 'Disable loop' : 'Enable loop'}
-        data-testid="button-loop"
-      >
-        <Repeat className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${loopEnabled ? 'text-primary-foreground' : ''}`} />
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            size="icon"
+            variant={loopEnabled ? 'default' : 'outline'}
+            onClick={onToggleLoop}
+            disabled={disabled || isRecording}
+            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full relative ${!isPro ? 'opacity-70' : ''}`}
+            aria-label={isPro ? (loopEnabled ? 'Disable loop' : 'Enable loop') : 'Loop (Pro)'}
+            data-testid="button-loop"
+          >
+            <Repeat className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${loopEnabled ? 'text-primary-foreground' : ''}`} />
+            {!isPro && <Lock className="h-2.5 w-2.5 absolute top-0.5 right-0.5 text-amber-400" />}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{isPro ? (loopEnabled ? 'Disable loop' : 'Enable loop') : 'Loop (Pro)'}</p>
+        </TooltipContent>
+      </Tooltip>
 
       {/* Stop Button */}
       <Button

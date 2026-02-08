@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { Lock } from "lucide-react";
 
 export interface FilterBand {
   lowFreq: number;
@@ -13,6 +14,10 @@ interface FrequencyBandFilterProps {
   onFilterChange: (band: FilterBand) => void;
   /** Padding matching the spectrogram chart area */
   padding: { top: number; right: number; bottom: number; left: number };
+  /** Whether the user has Pro access */
+  isPro?: boolean;
+  /** Callback when a free user clicks on the locked filter */
+  onUpgradeClick?: () => void;
 }
 
 /**
@@ -26,6 +31,8 @@ export function FrequencyBandFilter({
   filterBand,
   onFilterChange,
   padding,
+  isPro = true,
+  onUpgradeClick,
 }: FrequencyBandFilterProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState<"low" | "high" | null>(null);
@@ -82,12 +89,18 @@ export function FrequencyBandFilter({
 
   const handlePointerDown = useCallback(
     (handle: "low" | "high") => (e: React.PointerEvent) => {
+      if (!isPro) {
+        e.preventDefault();
+        e.stopPropagation();
+        onUpgradeClick?.();
+        return;
+      }
       e.preventDefault();
       e.stopPropagation();
       setDragging(handle);
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
     },
-    [],
+    [isPro, onUpgradeClick],
   );
 
   const handlePointerMove = useCallback(
@@ -180,7 +193,7 @@ export function FrequencyBandFilter({
           right: padding.right,
           top: highY - halfHandle,
           height: handleHeight,
-          cursor: "ns-resize",
+          cursor: isPro ? "ns-resize" : "pointer",
           pointerEvents: "auto",
           touchAction: "none",
         }}
@@ -188,17 +201,18 @@ export function FrequencyBandFilter({
       >
         <div
           className="w-full h-[2px] absolute top-1/2 -translate-y-1/2"
-          style={{ background: "rgba(0, 200, 255, 0.8)" }}
+          style={{ background: isPro ? "rgba(0, 200, 255, 0.8)" : "rgba(0, 200, 255, 0.5)" }}
         />
         <div
           className="absolute top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium select-none"
           style={{
             right: 0,
-            background: "rgba(0, 200, 255, 0.9)",
+            background: isPro ? "rgba(0, 200, 255, 0.9)" : "rgba(0, 200, 255, 0.5)",
             color: "#000",
             touchAction: "none",
           }}
         >
+          {!isPro && <Lock style={{ width: 10, height: 10 }} />}
           ▼ {formatFreq(filterBand.highFreq)} Hz
         </div>
       </div>
@@ -211,7 +225,7 @@ export function FrequencyBandFilter({
           right: padding.right,
           top: lowY - halfHandle,
           height: handleHeight,
-          cursor: "ns-resize",
+          cursor: isPro ? "ns-resize" : "pointer",
           pointerEvents: "auto",
           touchAction: "none",
         }}
@@ -219,17 +233,18 @@ export function FrequencyBandFilter({
       >
         <div
           className="w-full h-[2px] absolute top-1/2 -translate-y-1/2"
-          style={{ background: "rgba(255, 180, 0, 0.8)" }}
+          style={{ background: isPro ? "rgba(255, 180, 0, 0.8)" : "rgba(255, 180, 0, 0.5)" }}
         />
         <div
           className="absolute top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium select-none"
           style={{
             right: 0,
-            background: "rgba(255, 180, 0, 0.9)",
+            background: isPro ? "rgba(255, 180, 0, 0.9)" : "rgba(255, 180, 0, 0.5)",
             color: "#000",
             touchAction: "none",
           }}
         >
+          {!isPro && <Lock style={{ width: 10, height: 10 }} />}
           ▲ {formatFreq(filterBand.lowFreq)} Hz
         </div>
       </div>

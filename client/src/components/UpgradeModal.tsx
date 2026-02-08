@@ -76,6 +76,9 @@ export function UpgradeModal({ open, onClose, onActivate, isActivating }: Upgrad
           {/* Feature list */}
           <div className="space-y-2.5 mb-6">
             {[
+              'Unlimited session length',
+              'Repeat/loop playback',
+              'Frequency band isolation',
               'Harmonic overtone overlay',
               'High-res PNG export',
               'Video & WAV recording export',
