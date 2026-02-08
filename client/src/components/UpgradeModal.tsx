@@ -96,7 +96,7 @@ export function UpgradeModal({ open, onClose, onActivate, isActivating }: Upgrad
             className="w-full h-11 text-base font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0 mb-6"
             onClick={() => window.open(CHECKOUT_URL, '_blank', 'noopener,noreferrer')}
           >
-            Buy Pro — $4.99
+            Buy Pro — $6.99
           </Button>
 
           {/* Divider */}
