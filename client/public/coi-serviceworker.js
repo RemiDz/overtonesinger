@@ -18,6 +18,11 @@ if (typeof window === "undefined") {
       return;
     }
 
+    // Pass through LemonSqueezy API requests without adding COEP/COOP headers
+    if (e.request.url.includes("api.lemonsqueezy.com")) {
+      return;
+    }
+
     e.respondWith(
       fetch(e.request)
         .then((response) => {
