@@ -146,7 +146,7 @@ export function TransportControls({
                 size="icon"
                 variant="outline"
                 onClick={onExportPNG}
-                disabled={disabled}
+                disabled={disabled || isRecording || isPlaying}
                 className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full relative ${!isPro ? 'opacity-70' : ''}`}
                 aria-label={isPro ? 'Export PNG' : 'Export PNG (Pro)'}
                 data-testid="button-export-png"

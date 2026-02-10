@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Star, Check, Loader2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -15,6 +15,15 @@ export function UpgradeModal({ open, onClose, onActivate, isActivating }: Upgrad
   const [licenseKey, setLicenseKey] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // Reset state when modal reopens
+  useEffect(() => {
+    if (open) {
+      setError(null);
+      setSuccess(false);
+      setLicenseKey('');
+    }
+  }, [open]);
 
   if (!open) return null;
 

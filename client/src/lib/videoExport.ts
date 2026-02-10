@@ -67,7 +67,7 @@ export function createVideoExportRecorder(
     mediaRecorder.removeEventListener('stop', handleStop);
     mediaRecorder.removeEventListener('error', handleError);
     
-    rejectRecording?.(new Error('MediaRecorder error: ' + (event as any).error?.message || 'Unknown error'));
+    rejectRecording?.(new Error('MediaRecorder error: ' + ((event as any).error?.message || 'Unknown error')));
   };
 
   mediaRecorder.addEventListener('dataavailable', handleDataAvailable);

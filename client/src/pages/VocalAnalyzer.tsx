@@ -32,6 +32,7 @@ export default function VocalAnalyzer() {
   const [filterBand, setFilterBand] = useState<FilterBand>({ lowFreq: 60, highFreq: 8000 });
   const [loopPlayback, setLoopPlayback] = useState(false);
   const loopPlaybackRef = useRef(false);
+  const filterBandRef = useRef<FilterBand>({ lowFreq: 60, highFreq: 8000 });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSessionLimitModal, setShowSessionLimitModal] = useState(false);
   const sessionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -251,7 +252,7 @@ export default function VocalAnalyzer() {
             (time) => setPlaybackTime(time),
             onEnd,
             undefined,
-            filterBand
+            filterBandRef.current
           );
         } else {
           updateRecordingState('stopped');
@@ -263,11 +264,11 @@ export default function VocalAnalyzer() {
         (time) => setPlaybackTime(time),
         onEnd,
         undefined,
-        filterBand
+        filterBandRef.current
       );
       updateRecordingState('playing');
     }
-  }, [recordingState, audioBuffer, playRecording, filterBand, updateRecordingState]);
+  }, [recordingState, audioBuffer, playRecording, updateRecordingState]);
 
   const handleStop = () => {
     if (recordingState === 'recording') {
@@ -298,6 +299,7 @@ export default function VocalAnalyzer() {
     setPlaybackTime(0);
     setTotalDuration(0);
     setFilterBand({ lowFreq: 60, highFreq: 8000 });
+    filterBandRef.current = { lowFreq: 60, highFreq: 8000 };
     setTargetHarmonic(null);
     setLoopPlayback(false);
     loopPlaybackRef.current = false;
@@ -372,10 +374,11 @@ export default function VocalAnalyzer() {
 
   const handleFilterChange = useCallback((band: FilterBand) => {
     setFilterBand(band);
-    if (recordingState === 'playing') {
+    filterBandRef.current = band;
+    if (recordingStateRef.current === 'playing') {
       updatePlaybackFilter(band);
     }
-  }, [recordingState, updatePlaybackFilter]);
+  }, [updatePlaybackFilter]);
 
   const toggleLoop = () => {
     if (!isProUser) {

@@ -11,6 +11,8 @@ export function useProStatus() {
     if (state.licenseKey) {
       validateLicense().then((result) => {
         setIsProUser(result.success);
+      }).catch(() => {
+        // Network/parse error — trust stored state
       });
     }
   }, []);
