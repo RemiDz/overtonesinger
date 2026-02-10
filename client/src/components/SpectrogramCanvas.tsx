@@ -665,7 +665,58 @@ export const SpectrogramCanvas = forwardRef<
       return Math.max(0, Math.min(1, scaled * brightnessMultiplier));
     };
 
+    const magnitudeToColorRGBFromScaled = (
+      scaled: number,
+    ): { r: number; g: number; b: number } => {
+      const clamped = Math.max(0, Math.min(1, scaled));
 
+      switch (colorScheme) {
+        case "warm":
+          if (clamped < 0.25) {
+            const t = clamped / 0.25;
+            return { r: Math.floor(80 + t * 100), g: Math.floor(40 * t), b: 0 };
+          } else if (clamped < 0.6) {
+            const t = (clamped - 0.25) / 0.35;
+            return { r: Math.floor(180 + t * 75), g: Math.floor(40 + t * 120), b: 0 };
+          } else {
+            const t = (clamped - 0.6) / 0.4;
+            return { r: 255, g: Math.floor(160 + t * 95), b: Math.floor(t * 100) };
+          }
+
+        case "cool":
+          if (clamped < 0.25) {
+            const t = clamped / 0.25;
+            return { r: 0, g: Math.floor(50 * t), b: Math.floor(100 + t * 155) };
+          } else if (clamped < 0.6) {
+            const t = (clamped - 0.25) / 0.35;
+            return { r: 0, g: Math.floor(50 + t * 155), b: Math.floor(200 - t * 50) };
+          } else {
+            const t = (clamped - 0.6) / 0.4;
+            return { r: Math.floor(t * 100), g: Math.floor(205 + t * 50), b: Math.floor(150 + t * 105) };
+          }
+
+        case "monochrome": {
+          const gray = Math.floor(clamped * 255);
+          return { r: gray, g: gray, b: gray };
+        }
+
+        case "default":
+        default:
+          if (clamped < 0.2) {
+            const t = clamped / 0.2;
+            return { r: 0, g: 0, b: Math.floor(128 + t * 127) };
+          } else if (clamped < 0.5) {
+            const t = (clamped - 0.2) / 0.3;
+            return { r: 0, g: Math.floor(t * 255), b: 255 };
+          } else if (clamped < 0.8) {
+            const t = (clamped - 0.5) / 0.3;
+            return { r: Math.floor(t * 255), g: 255, b: Math.floor(255 - t * 255) };
+          } else {
+            const t = (clamped - 0.8) / 0.2;
+            return { r: 255, g: Math.floor(255 - t * 100), b: 0 };
+          }
+      }
+    };
 
     const magnitudeToColor = (magnitude: number): string => {
       const scaled = applyIntensityScaling(magnitude);
