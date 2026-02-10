@@ -1,0 +1,149 @@
+import { useState } from 'react';
+import { Settings, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import type { IntensityScaleMode, ColorScheme, FFTSize } from '@shared/schema';
+
+interface AdvancedSettingsProps {
+  intensityScale: IntensityScaleMode;
+  intensityBoost: number;
+  fftSize: FFTSize;
+  colorScheme: ColorScheme;
+  onIntensityScaleChange: (value: IntensityScaleMode) => void;
+  onIntensityBoostChange: (value: number) => void;
+  onFFTSizeChange: (value: FFTSize) => void;
+  onColorSchemeChange: (value: ColorScheme) => void;
+}
+
+export function AdvancedSettings({
+  intensityScale,
+  intensityBoost,
+  fftSize,
+  colorScheme,
+  onIntensityScaleChange,
+  onIntensityBoostChange,
+  onFFTSizeChange,
+  onColorSchemeChange,
+}: AdvancedSettingsProps) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button
+          variant="outline"
+          size="icon"
+          data-testid="button-advanced-settings"
+        >
+          <Settings className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="w-screen h-screen max-w-none m-0 p-0 rounded-none [&>button]:hidden" data-testid="dialog-advanced-settings">
+        <div className="h-full flex flex-col">
+          <DialogHeader className="flex-none px-4 py-3 border-b">
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle>Advanced Settings</DialogTitle>
+                <DialogDescription className="text-xs mt-1">
+                  Customize visualization parameters
+                </DialogDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setOpen(false)}
+                data-testid="button-close-settings"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto px-4 py-4">
+            <div className="space-y-4 max-w-2xl mx-auto">
+              <div className="space-y-3">
+                <h5 className="text-sm font-medium">Analysis</h5>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="fft-size" className="text-sm">
+                    FFT Window Size
+                  </Label>
+                  <Select
+                    value={fftSize.toString()}
+                    onValueChange={(value) => onFFTSizeChange(parseInt(value) as FFTSize)}
+                  >
+                    <SelectTrigger id="fft-size" data-testid="select-fft-size">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="4096">4096 (good detail)</SelectItem>
+                      <SelectItem value="8192">8192 (high resolution)</SelectItem>
+                      <SelectItem value="16384">16384 (very high resolution)</SelectItem>
+                      <SelectItem value="32768">32768 (maximum resolution)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Higher values provide better frequency resolution
+                  </p>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-3">
+                <h5 className="text-sm font-medium">Color & Intensity</h5>
+
+                <div className="space-y-2">
+                  <Label htmlFor="color-scheme" className="text-sm">
+                    Color Scheme
+                  </Label>
+                  <Select
+                    value={colorScheme}
+                    onValueChange={(value) => onColorSchemeChange(value as ColorScheme)}
+                  >
+                    <SelectTrigger id="color-scheme" data-testid="select-color-scheme">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="default">Default (blue-cyan-yellow-red)</SelectItem>
+                      <SelectItem value="warm">Warm (orange-red-yellow)</SelectItem>
+                      <SelectItem value="cool">Cool (blue-green-cyan)</SelectItem>
+                      <SelectItem value="monochrome">Monochrome (grayscale)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="intensity-scale" className="text-sm">
+                    Intensity Scaling
+                  </Label>
+                  <Select
+                    value={intensityScale}
+                    onValueChange={(value) => onIntensityScaleChange(value as IntensityScaleMode)}
+                  >
+                    <SelectTrigger id="intensity-scale" data-testid="select-intensity-scale">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="linear">Normal</SelectItem>
+                      <SelectItem value="logarithmic">Boost Quiet Sounds</SelectItem>
+                      <SelectItem value="power">Balanced</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {intensityScale === 'linear' && 'Shows sounds as they are'}
+                    {intensityScale === 'logarithmic' && 'Makes quiet sounds easier to see'}
+                    {intensityScale === 'power' && 'Good mix of loud and quiet sounds'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

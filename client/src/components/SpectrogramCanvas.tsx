@@ -93,13 +93,13 @@ export const SpectrogramCanvas = forwardRef<
     const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(
       null,
     );
-    const currentOvertoneCountRef = useRef(0);
-    const maxOvertoneCountRef = useRef(0);
+    const [currentOvertoneCount, setCurrentOvertoneCount] = useState(0);
+    const [maxOvertoneCount, setMaxOvertoneCount] = useState(0);
 
     useEffect(() => {
       if (!spectrogramData || spectrogramData.frequencies.length === 0) {
-        currentOvertoneCountRef.current = 0;
-        maxOvertoneCountRef.current = 0;
+        setCurrentOvertoneCount(0);
+        setMaxOvertoneCount(0);
       }
     }, [spectrogramData]);
 
@@ -209,62 +209,51 @@ export const SpectrogramCanvas = forwardRef<
       const chartWidth = width - padding.left - padding.right;
       const chartHeight = height - padding.top - padding.bottom;
 
-      // Cache computed style once per frame to avoid repeated forced style recalculations
       const computedStyle = getComputedStyle(document.documentElement);
-      const cachedColors = {
-        bg: `hsl(${computedStyle.getPropertyValue("--background")})`,
-        fg: `hsl(${computedStyle.getPropertyValue("--foreground")})`,
-        primary: computedStyle.getPropertyValue("--primary"),
-        destructive: computedStyle.getPropertyValue("--destructive"),
-      };
-      ctx.fillStyle = cachedColors.bg;
+      const bgColor = computedStyle.getPropertyValue("--background");
+      ctx.fillStyle = `hsl(${bgColor})`;
       ctx.fillRect(0, 0, width, height);
 
       ctx.fillStyle = "#000000";
       ctx.fillRect(padding.left, padding.top, chartWidth, chartHeight);
 
       if (!spectrogramData || spectrogramData.frequencies.length === 0) {
-        drawEmptyState(ctx, width, height, padding, cachedColors);
+        drawEmptyState(ctx, width, height, padding);
         return;
       }
 
       drawGrid(ctx, padding, chartWidth, chartHeight);
-      drawAxes(ctx, padding, chartWidth, chartHeight, cachedColors);
-      drawFrequencyScale(ctx, padding, chartWidth, chartHeight, cachedColors);
+      drawAxes(ctx, padding, chartWidth, chartHeight);
+      drawFrequencyScale(ctx, padding, chartWidth, chartHeight);
       drawSpectrogramData(ctx, padding, chartWidth, chartHeight);
-
-      // Pre-compute harmonic detection once for both markers and target guide
-      const detectedHarmonics = showFrequencyMarkers && spectrogramData && spectrogramData.frequencies.length > 0
-        ? detectDominantFrequencies(spectrogramData.frequencies)
-        : [];
 
       if (showFrequencyMarkers) {
         const overtoneCount =
-          drawFrequencyMarkers(ctx, padding, chartWidth, chartHeight, detectedHarmonics, cachedColors) || 0;
+          drawFrequencyMarkers(ctx, padding, chartWidth, chartHeight) || 0;
 
         if (isRecording) {
-          if (overtoneCount > currentOvertoneCountRef.current) {
-            currentOvertoneCountRef.current = overtoneCount;
+          if (overtoneCount > currentOvertoneCount) {
+            setCurrentOvertoneCount(overtoneCount);
           }
         } else {
-          currentOvertoneCountRef.current = overtoneCount;
+          setCurrentOvertoneCount(overtoneCount);
         }
 
-        if (overtoneCount > maxOvertoneCountRef.current) {
-          maxOvertoneCountRef.current = overtoneCount;
+        if (overtoneCount > maxOvertoneCount) {
+          setMaxOvertoneCount(overtoneCount);
         }
       }
 
       // drawOvertoneCounter(ctx, padding, currentOvertoneCount, maxOvertoneCount);
 
       if (targetHarmonic && showFrequencyMarkers) {
-        drawTargetGuide(ctx, padding, chartWidth, chartHeight, detectedHarmonics);
+        drawTargetGuide(ctx, padding, chartWidth, chartHeight);
       }
 
-      drawOvertoneCounter(ctx, padding, currentOvertoneCountRef.current, maxOvertoneCountRef.current);
+      drawOvertoneCounter(ctx, padding, currentOvertoneCount, maxOvertoneCount);
 
       if (isPlaying) {
-        drawPlaybackIndicator(ctx, padding, chartWidth, chartHeight, cachedColors);
+        drawPlaybackIndicator(ctx, padding, chartWidth, chartHeight);
       }
 
       if (mousePos) {
@@ -272,7 +261,7 @@ export const SpectrogramCanvas = forwardRef<
       }
 
       if (isRecording) {
-        drawRecordingIndicator(ctx, width, height, cachedColors);
+        drawRecordingIndicator(ctx, width, height);
       }
     };
 
@@ -281,13 +270,12 @@ export const SpectrogramCanvas = forwardRef<
       width: number,
       height: number,
       padding: { top: number; right: number; bottom: number; left: number },
-      cachedColors: { bg: string; fg: string; primary: string; destructive: string },
     ) => {
       const chartWidth = width - padding.left - padding.right;
       const chartHeight = height - padding.top - padding.bottom;
 
       drawGrid(ctx, padding, chartWidth, chartHeight);
-      drawAxes(ctx, padding, chartWidth, chartHeight, cachedColors);
+      drawAxes(ctx, padding, chartWidth, chartHeight);
 
       ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
       ctx.font = "14px Inter, sans-serif";
@@ -372,8 +360,10 @@ export const SpectrogramCanvas = forwardRef<
       padding: { top: number; right: number; bottom: number; left: number },
       chartWidth: number,
       chartHeight: number,
-      cachedColors: { bg: string; fg: string; primary: string; destructive: string },
     ) => {
+      const computedStyle = getComputedStyle(document.documentElement);
+      const fgColor = computedStyle.getPropertyValue("--foreground");
+
       ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
       ctx.lineWidth = 2;
 
@@ -383,7 +373,7 @@ export const SpectrogramCanvas = forwardRef<
       ctx.lineTo(padding.left + chartWidth, padding.top + chartHeight);
       ctx.stroke();
 
-      ctx.fillStyle = cachedColors.fg;
+      ctx.fillStyle = `hsl(${fgColor})`;
       ctx.font = "12px Inter, sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
@@ -409,14 +399,15 @@ export const SpectrogramCanvas = forwardRef<
       padding: { top: number; right: number; bottom: number; left: number },
       chartWidth: number,
       chartHeight: number,
-      cachedColors: { bg: string; fg: string; primary: string; destructive: string },
     ) => {
       const freqLabels = generateFreqSteps();
+      const computedStyle = getComputedStyle(document.documentElement);
+      const fgColor = computedStyle.getPropertyValue("--foreground");
 
       ctx.font = "11px Inter, sans-serif";
       ctx.textAlign = "right";
       ctx.textBaseline = "middle";
-      ctx.fillStyle = cachedColors.fg;
+      ctx.fillStyle = `hsl(${fgColor})`;
 
       freqLabels.forEach((freq) => {
         const y = freqToY(freq, padding.top, chartHeight);
@@ -468,9 +459,8 @@ export const SpectrogramCanvas = forwardRef<
       }
 
       const offscreenCanvas = offscreenCanvasRef.current;
-      const dpr = window.devicePixelRatio || 1;
-      const offscreenWidth = Math.floor(chartWidth * dpr);
-      const offscreenHeight = Math.floor(chartHeight * dpr);
+      const offscreenWidth = chartWidth;
+      const offscreenHeight = chartHeight;
 
       if (
         offscreenCanvas.width !== offscreenWidth ||
@@ -630,10 +620,7 @@ export const SpectrogramCanvas = forwardRef<
     ): number[] => {
       if (threshold === 0) return magnitudes;
 
-      let maxMagnitude = 0;
-      for (let i = 0; i < magnitudes.length; i++) {
-        if (magnitudes[i] > maxMagnitude) maxMagnitude = magnitudes[i];
-      }
+      const maxMagnitude = Math.max(...magnitudes);
 
       const noiseGateThreshold = maxMagnitude * threshold;
 
@@ -678,56 +665,15 @@ export const SpectrogramCanvas = forwardRef<
       return Math.max(0, Math.min(1, scaled * brightnessMultiplier));
     };
 
-    const magnitudeToColorRGBFromScaled = (
-      scaled: number,
-    ): { r: number; g: number; b: number } => {
+
+
+    const magnitudeToColor = (magnitude: number): string => {
+      const scaled = applyIntensityScaling(magnitude);
+      const color = magnitudeToColorRGBFromScaled(scaled);
       const clamped = Math.max(0, Math.min(1, scaled));
 
-      switch (colorScheme) {
-        case "warm":
-          if (clamped < 0.25) {
-            const t = clamped / 0.25;
-            return { r: Math.floor(80 + t * 100), g: Math.floor(40 * t), b: 0 };
-          } else if (clamped < 0.6) {
-            const t = (clamped - 0.25) / 0.35;
-            return { r: Math.floor(180 + t * 75), g: Math.floor(40 + t * 120), b: 0 };
-          } else {
-            const t = (clamped - 0.6) / 0.4;
-            return { r: 255, g: Math.floor(160 + t * 95), b: Math.floor(t * 100) };
-          }
-
-        case "cool":
-          if (clamped < 0.25) {
-            const t = clamped / 0.25;
-            return { r: 0, g: Math.floor(50 * t), b: Math.floor(100 + t * 155) };
-          } else if (clamped < 0.6) {
-            const t = (clamped - 0.25) / 0.35;
-            return { r: 0, g: Math.floor(50 + t * 155), b: Math.floor(200 - t * 50) };
-          } else {
-            const t = (clamped - 0.6) / 0.4;
-            return { r: Math.floor(t * 100), g: Math.floor(205 + t * 50), b: Math.floor(150 + t * 105) };
-          }
-
-        case "monochrome":
-          const gray = Math.floor(clamped * 255);
-          return { r: gray, g: gray, b: gray };
-
-        case "default":
-        default:
-          if (clamped < 0.2) {
-            const t = clamped / 0.2;
-            return { r: 0, g: 0, b: Math.floor(128 + t * 127) };
-          } else if (clamped < 0.5) {
-            const t = (clamped - 0.2) / 0.3;
-            return { r: 0, g: Math.floor(t * 255), b: 255 };
-          } else if (clamped < 0.8) {
-            const t = (clamped - 0.5) / 0.3;
-            return { r: Math.floor(t * 255), g: 255, b: Math.floor(255 - t * 255) };
-          } else {
-            const t = (clamped - 0.8) / 0.2;
-            return { r: 255, g: Math.floor(255 - t * 100), b: 0 };
-          }
-      }
+      const alpha = clamped * 0.9 + 0.1;
+      return `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`;
     };
 
     const drawCrosshair = (
@@ -760,17 +706,16 @@ export const SpectrogramCanvas = forwardRef<
       padding: { top: number; right: number; bottom: number; left: number },
       chartWidth: number,
       chartHeight: number,
-      precomputedHarmonics?: ReturnType<typeof detectDominantFrequencies>,
-      cachedColors?: { bg: string; fg: string; primary: string; destructive: string },
     ) => {
       if (!spectrogramData || spectrogramData.frequencies.length === 0) return;
 
-      const primaryColor = cachedColors?.primary ?? getComputedStyle(document.documentElement).getPropertyValue("--primary");
+      const computedStyle = getComputedStyle(document.documentElement);
+      const primaryColor = computedStyle.getPropertyValue("--primary");
 
       const logMin = Math.log10(minFrequency);
       const logMax = Math.log10(maxFrequency);
 
-      const detectedHarmonics = precomputedHarmonics ?? detectDominantFrequencies(
+      const detectedHarmonics = detectDominantFrequencies(
         spectrogramData.frequencies,
       );
 
@@ -815,55 +760,27 @@ export const SpectrogramCanvas = forwardRef<
       });
 
       filteredMarkers.forEach(({ freq, y, isFundamental, alpha, harmonicIndex }) => {
-        // Harmonic line across the spectrogram
-        ctx.strokeStyle = `hsl(${primaryColor} / ${alpha * 0.6})`;
-        ctx.lineWidth = isFundamental ? 1.5 : 1;
-        ctx.setLineDash(isFundamental ? [6, 4] : [3, 3]);
+        ctx.strokeStyle = `hsl(${primaryColor} / ${alpha})`;
+        ctx.lineWidth = isFundamental ? 2 : 1.5;
+        ctx.setLineDash(isFundamental ? [8, 4] : [4, 2]);
 
         ctx.beginPath();
         ctx.moveTo(padding.left, y);
         ctx.lineTo(padding.left + chartWidth, y);
         ctx.stroke();
 
-        // Compact right-edge badge: "H1" or "H5"
-        // Fundamental gets a slightly larger badge with Hz value
-        const shortLabel = `H${harmonicIndex}`;
-        const badgeFont = isFundamental ? "bold 10px Inter, sans-serif" : "9px Inter, sans-serif";
-        ctx.font = badgeFont;
+        // Build label: "H1 Fund. 131Hz" or "H3 5th 393Hz"
+        const intervalName = HARMONIC_LABELS[harmonicIndex] || "";
+        const hzLabel = `${Math.round(freq)}`;
+        const label = `H${harmonicIndex} ${intervalName} ${hzLabel}`;
 
-        const badgeText = isFundamental
-          ? `${shortLabel} ${Math.round(freq)}`
-          : shortLabel;
-
-        const textWidth = ctx.measureText(badgeText).width;
-        const badgePadH = 4;
-        const badgePadV = 2;
-        const badgeH = (isFundamental ? 12 : 10) + badgePadV * 2;
-        const badgeW = textWidth + badgePadH * 2;
-        const badgeX = padding.left + chartWidth - badgeW - 2;
-        const badgeY = y - badgeH / 2;
-
-        // Badge background
-        ctx.fillStyle = isFundamental ? "rgba(0, 0, 0, 0.8)" : "rgba(0, 0, 0, 0.65)";
-        ctx.beginPath();
-        ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 3);
-        ctx.fill();
-
-        // Badge border
-        ctx.strokeStyle = `hsl(${primaryColor} / ${isFundamental ? 0.6 : 0.3})`;
-        ctx.lineWidth = 0.5;
-        ctx.setLineDash([]);
-        ctx.beginPath();
-        ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 3);
-        ctx.stroke();
-
-        // Badge text
-        ctx.fillStyle = isFundamental
-          ? `hsl(${primaryColor} / 1.0)`
-          : `hsl(${primaryColor} / ${Math.min(0.9, alpha + 0.3)})`;
-        ctx.textAlign = "center";
+        ctx.fillStyle = `hsl(${primaryColor} / ${Math.min(0.9, alpha + 0.2)})`;
+        ctx.font = isFundamental
+          ? "bold 11px Inter, sans-serif"
+          : "10px Inter, sans-serif";
+        ctx.textAlign = "left";
         ctx.textBaseline = "middle";
-        ctx.fillText(badgeText, badgeX + badgeW / 2, badgeY + badgeH / 2);
+        ctx.fillText(label, 2, y - 2);
       });
 
       ctx.setLineDash([]);
@@ -996,11 +913,10 @@ export const SpectrogramCanvas = forwardRef<
       padding: { top: number; right: number; bottom: number; left: number },
       chartWidth: number,
       chartHeight: number,
-      precomputedHarmonics?: ReturnType<typeof detectDominantFrequencies>,
     ) => {
       if (!targetHarmonic || !spectrogramData || spectrogramData.frequencies.length === 0) return;
 
-      const detectedHarmonics = precomputedHarmonics ?? detectDominantFrequencies(spectrogramData.frequencies);
+      const detectedHarmonics = detectDominantFrequencies(spectrogramData.frequencies);
       if (detectedHarmonics.length === 0) return;
 
       const { fundamental } = detectedHarmonics[0];
@@ -1040,40 +956,22 @@ export const SpectrogramCanvas = forwardRef<
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Target badge on right side — compact with dark background
+      // Target label on right side
       const intervalName = HARMONIC_LABELS[targetHarmonic] || "";
-      const targetLabel = isHitting
-        ? `✓ H${targetHarmonic} ${intervalName}`
-        : `→ H${targetHarmonic} ${intervalName}`;
-
-      ctx.font = "bold 10px Inter, sans-serif";
-      const targetTextWidth = ctx.measureText(targetLabel).width;
-      const tBadgePadH = 5;
-      const tBadgePadV = 3;
-      const tBadgeW = targetTextWidth + tBadgePadH * 2;
-      const tBadgeH = 14 + tBadgePadV * 2;
-      const tBadgeX = padding.left + chartWidth - tBadgeW - 2;
-      const tBadgeY = targetY - 12 - tBadgeH;
-
-      // Badge background
-      ctx.fillStyle = isHitting ? "rgba(0, 40, 20, 0.85)" : "rgba(0, 0, 0, 0.75)";
-      ctx.beginPath();
-      ctx.roundRect(tBadgeX, tBadgeY, tBadgeW, tBadgeH, 4);
-      ctx.fill();
-
-      // Badge border
-      ctx.strokeStyle = isHitting ? "rgba(0, 255, 120, 0.5)" : "rgba(255, 200, 0, 0.3)";
-      ctx.lineWidth = 1;
-      ctx.setLineDash([]);
-      ctx.beginPath();
-      ctx.roundRect(tBadgeX, tBadgeY, tBadgeW, tBadgeH, 4);
-      ctx.stroke();
-
-      // Badge text
+      const label = `→ H${targetHarmonic} ${intervalName} ${Math.round(targetFreq)}Hz`;
       ctx.fillStyle = guideColor;
-      ctx.textAlign = "center";
+      ctx.font = "bold 11px Inter, sans-serif";
+      ctx.textAlign = "right";
       ctx.textBaseline = "middle";
-      ctx.fillText(targetLabel, tBadgeX + tBadgeW / 2, tBadgeY + tBadgeH / 2);
+      ctx.fillText(label, padding.left + chartWidth - 4, targetY - 8);
+
+      // Hit indicator
+      if (isHitting) {
+        ctx.fillStyle = "rgba(0, 255, 120, 0.9)";
+        ctx.font = "bold 12px Inter, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("✓", padding.left + chartWidth - 60, targetY - 8);
+      }
     };
 
     const drawPlaybackIndicator = (
@@ -1081,7 +979,6 @@ export const SpectrogramCanvas = forwardRef<
       padding: { top: number; right: number; bottom: number; left: number },
       chartWidth: number,
       chartHeight: number,
-      cachedColors: { bg: string; fg: string; primary: string; destructive: string },
     ) => {
       if (!spectrogramData) return;
 
@@ -1098,7 +995,10 @@ export const SpectrogramCanvas = forwardRef<
       const normalizedTime = (playbackTime - startTime) / visibleDuration;
       const x = padding.left + normalizedTime * chartWidth;
 
-      ctx.strokeStyle = `hsl(${cachedColors.primary})`;
+      const computedStyle = getComputedStyle(document.documentElement);
+      const primaryColor = computedStyle.getPropertyValue("--primary");
+
+      ctx.strokeStyle = `hsl(${primaryColor})`;
       ctx.lineWidth = 2;
       ctx.setLineDash([]);
 
@@ -1107,7 +1007,7 @@ export const SpectrogramCanvas = forwardRef<
       ctx.lineTo(x, padding.top + chartHeight);
       ctx.stroke();
 
-      ctx.fillStyle = `hsl(${cachedColors.primary})`;
+      ctx.fillStyle = `hsl(${primaryColor})`;
       ctx.beginPath();
       ctx.moveTo(x, padding.top);
       ctx.lineTo(x - 5, padding.top - 8);
@@ -1168,14 +1068,17 @@ export const SpectrogramCanvas = forwardRef<
       ctx: CanvasRenderingContext2D,
       width: number,
       height: number,
-      cachedColors: { bg: string; fg: string; primary: string; destructive: string },
     ) => {
-      ctx.fillStyle = `hsl(${cachedColors.destructive})`;
+      const computedStyle = getComputedStyle(document.documentElement);
+      const destructiveColor = computedStyle.getPropertyValue("--destructive");
+      const fgColor = computedStyle.getPropertyValue("--foreground");
+
+      ctx.fillStyle = `hsl(${destructiveColor})`;
       ctx.beginPath();
       ctx.arc(width - 24, 24, 6, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = cachedColors.fg;
+      ctx.fillStyle = `hsl(${fgColor})`;
       ctx.font = "12px Inter, sans-serif";
       ctx.textAlign = "right";
       ctx.textBaseline = "middle";
