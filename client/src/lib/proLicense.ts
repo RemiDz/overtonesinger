@@ -1,6 +1,9 @@
 // Pro License Management Module
 // Validates LemonSqueezy license keys via Cloudflare Worker proxy
 
+// NOTE: This endpoint is publicly visible in client bundles by design.
+// The Cloudflare Worker MUST enforce rate limiting (e.g., 5 requests/min/IP)
+// and input validation to prevent abuse.
 const API_BASE = 'https://overtone-license.nuoroda.workers.dev';
 
 interface LicenseState {
@@ -20,7 +23,14 @@ export function getLicenseState(): LicenseState {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      cachedState = JSON.parse(stored);
+      const parsed = JSON.parse(stored) as LicenseState;
+      // Basic integrity check: an active license must have a key and activation timestamp
+      if (parsed.isActive && (!parsed.licenseKey || !parsed.activatedAt)) {
+        cachedState = { isActive: false, licenseKey: null, instanceId: null, activatedAt: null };
+        localStorage.removeItem(STORAGE_KEY);
+        return cachedState;
+      }
+      cachedState = parsed;
       return cachedState!;
     }
   } catch {}
@@ -58,7 +68,7 @@ export async function activateLicense(licenseKey: string): Promise<{ success: bo
     });
 
     const data = await response.json();
-    console.log('License activation response:', data);
+    // Debug logging removed for production
 
     if (data.valid || data.activated) {
       saveLicenseState({
@@ -103,7 +113,7 @@ export async function validateLicense(licenseKey?: string): Promise<{ success: b
     });
 
     const data = await response.json();
-    console.log('License validation response:', data);
+    // Debug logging removed for production
 
     if (data.valid) {
       saveLicenseState({

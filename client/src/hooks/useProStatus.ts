@@ -5,16 +5,24 @@ export function useProStatus() {
   const [isProUser, setIsProUser] = useState(() => isPro());
   const [isActivating, setIsActivating] = useState(false);
 
-  // Re-validate stored license in the background on mount
+  // Re-validate stored license in the background on mount and periodically
   useEffect(() => {
     const state = getLicenseState();
-    if (state.licenseKey) {
+    if (!state.licenseKey) return;
+
+    const doValidation = () => {
       validateLicense().then((result) => {
         setIsProUser(result.success);
       }).catch(() => {
         // Network/parse error — trust stored state
       });
-    }
+    };
+
+    doValidation();
+
+    // Re-validate every 15 minutes to catch revoked licenses and deter tampering
+    const intervalId = setInterval(doValidation, 15 * 60 * 1000);
+    return () => clearInterval(intervalId);
   }, []);
 
   const activate = useCallback(async (licenseKey: string): Promise<{ success: boolean; error?: string }> => {

@@ -92,6 +92,9 @@ export function useAudioAnalyzer(settings: AudioSettings) {
       const gainNode = audioContext.createGain();
       gainNode.gain.value = settings.microphoneGain / 100;
 
+      // TODO: Migrate to AudioWorkletNode — ScriptProcessorNode is deprecated.
+      // AudioWorklet runs off the main thread, improving both audio quality and UI performance.
+      // See: https://developer.mozilla.org/en-US/docs/Web/API/AudioWorkletNode
       const scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
       
       scriptProcessor.onaudioprocess = (e) => {
@@ -133,6 +136,11 @@ export function useAudioAnalyzer(settings: AudioSettings) {
     }
   }, [settings, cleanupAudioResources]);
 
+  // Maximum number of spectrogram frames to retain in memory.
+  // At ~60fps: 18000 frames ≈ 5 minutes of data.
+  // Beyond this limit older frames are dropped to prevent memory exhaustion.
+  const MAX_SPECTROGRAM_FRAMES = 18000;
+
   const processAudioFrame = useCallback(() => {
     const analyzer = analyzerRef.current;
     if (!analyzer) return;
@@ -150,6 +158,13 @@ export function useAudioAnalyzer(settings: AudioSettings) {
     
     spectrogramFramesRef.current.frequencies.push(Array.from(normalizedData));
     spectrogramFramesRef.current.timeStamps.push(currentTime);
+
+    // Evict oldest frames when exceeding the memory cap
+    if (spectrogramFramesRef.current.frequencies.length > MAX_SPECTROGRAM_FRAMES) {
+      const excess = spectrogramFramesRef.current.frequencies.length - MAX_SPECTROGRAM_FRAMES;
+      spectrogramFramesRef.current.frequencies.splice(0, excess);
+      spectrogramFramesRef.current.timeStamps.splice(0, excess);
+    }
 
     setSpectrogramData(prev => {
       if (!prev) return null;
