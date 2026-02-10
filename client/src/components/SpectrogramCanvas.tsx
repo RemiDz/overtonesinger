@@ -416,9 +416,7 @@ export const SpectrogramCanvas = forwardRef<
       ctx.font = "11px Inter, sans-serif";
       ctx.textAlign = "right";
       ctx.textBaseline = "middle";
-      ctx.fillStyle = showFrequencyMarkers
-        ? "rgba(255, 255, 255, 0.3)"
-        : cachedColors.fg;
+      ctx.fillStyle = cachedColors.fg;
 
       freqLabels.forEach((freq) => {
         const y = freqToY(freq, padding.top, chartHeight);
@@ -687,56 +685,115 @@ export const SpectrogramCanvas = forwardRef<
 
       switch (colorScheme) {
         case "warm": {
-          const r = Math.floor(Math.min(255, clamped * 3 * 255));
-          const g = Math.floor(
-            Math.min(255, Math.max(0, (clamped - 0.33) * 3) * 255),
-          );
-          const b = Math.floor(
-            Math.min(255, Math.max(0, (clamped - 0.66) * 3) * 200),
-          );
-          return { r, g, b };
+          // Warm scheme: deep brown → burnt orange → amber → bright gold
+          if (clamped < 0.25) {
+            const t = clamped / 0.25;
+            return {
+              r: Math.floor(40 + t * 60),
+              g: Math.floor(t * 25),
+              b: Math.floor(t * 5),
+            };
+          } else if (clamped < 0.5) {
+            const t = (clamped - 0.25) / 0.25;
+            return {
+              r: Math.floor(100 + t * 80),
+              g: Math.floor(25 + t * 55),
+              b: Math.floor(5 + t * 5),
+            };
+          } else if (clamped < 0.75) {
+            const t = (clamped - 0.5) / 0.25;
+            return {
+              r: Math.floor(180 + t * 55),
+              g: Math.floor(80 + t * 100),
+              b: Math.floor(10 + t * 15),
+            };
+          } else {
+            const t = (clamped - 0.75) / 0.25;
+            return {
+              r: Math.floor(235 + t * 20),
+              g: Math.floor(180 + t * 60),
+              b: Math.floor(25 + t * 100),
+            };
+          }
         }
         case "cool": {
-          const r = Math.floor(Math.max(0, (clamped - 0.66) * 3) * 200);
-          const g = Math.floor(
-            Math.min(255, Math.max(0, (clamped - 0.33) * 3) * 255),
-          );
-          const b = Math.floor(Math.min(255, clamped * 2 * 255));
-          return { r, g, b };
+          // Cool scheme: deep navy → blue → cyan → bright mint
+          if (clamped < 0.25) {
+            const t = clamped / 0.25;
+            return {
+              r: Math.floor(t * 10),
+              g: Math.floor(t * 30),
+              b: Math.floor(30 + t * 70),
+            };
+          } else if (clamped < 0.5) {
+            const t = (clamped - 0.25) / 0.25;
+            return {
+              r: Math.floor(10 + t * 10),
+              g: Math.floor(30 + t * 100),
+              b: Math.floor(100 + t * 80),
+            };
+          } else if (clamped < 0.75) {
+            const t = (clamped - 0.5) / 0.25;
+            return {
+              r: Math.floor(20 + t * 60),
+              g: Math.floor(130 + t * 90),
+              b: Math.floor(180 + t * 40),
+            };
+          } else {
+            const t = (clamped - 0.75) / 0.25;
+            return {
+              r: Math.floor(80 + t * 120),
+              g: Math.floor(220 + t * 35),
+              b: Math.floor(220 + t * 35),
+            };
+          }
         }
         case "monochrome": {
           const v = Math.floor(clamped * 255);
           return { r: v, g: v, b: v };
         }
         default: {
-          // 'default' — blue → cyan → yellow → red
-          if (clamped < 0.25) {
-            const t = clamped / 0.25;
+          // Default scheme: deep indigo → teal → green → amber/gold → white-gold
+          // Designed for extended sound healing practice — no harsh red
+          if (clamped < 0.2) {
+            // Silence → deep indigo
+            const t = clamped / 0.2;
             return {
-              r: 0,
-              g: Math.floor(t * 150),
-              b: Math.floor(80 + t * 175),
+              r: Math.floor(t * 20),
+              g: Math.floor(t * 10),
+              b: Math.floor(30 + t * 60),
             };
-          } else if (clamped < 0.5) {
-            const t = (clamped - 0.25) / 0.25;
+          } else if (clamped < 0.4) {
+            // Low → teal
+            const t = (clamped - 0.2) / 0.2;
             return {
-              r: 0,
-              g: Math.floor(150 + t * 105),
-              b: Math.floor(255 - t * 55),
+              r: Math.floor(20 - t * 10),
+              g: Math.floor(10 + t * 110),
+              b: Math.floor(90 + t * 70),
             };
-          } else if (clamped < 0.75) {
-            const t = (clamped - 0.5) / 0.25;
+          } else if (clamped < 0.6) {
+            // Medium → green
+            const t = (clamped - 0.4) / 0.2;
             return {
-              r: Math.floor(t * 255),
-              g: 255,
-              b: Math.floor(200 - t * 200),
+              r: Math.floor(10 + t * 80),
+              g: Math.floor(120 + t * 80),
+              b: Math.floor(160 - t * 100),
+            };
+          } else if (clamped < 0.8) {
+            // Strong → warm amber/gold
+            const t = (clamped - 0.6) / 0.2;
+            return {
+              r: Math.floor(90 + t * 145),
+              g: Math.floor(200 - t * 20),
+              b: Math.floor(60 - t * 40),
             };
           } else {
-            const t = (clamped - 0.75) / 0.25;
+            // Peak → bright white-gold
+            const t = (clamped - 0.8) / 0.2;
             return {
-              r: 255,
-              g: Math.floor(255 - t * 255),
-              b: 0,
+              r: Math.floor(235 + t * 20),
+              g: Math.floor(180 + t * 65),
+              b: Math.floor(20 + t * 160),
             };
           }
         }
@@ -828,48 +885,55 @@ export const SpectrogramCanvas = forwardRef<
       });
 
       filteredMarkers.forEach(({ freq, y, isFundamental, alpha, harmonicIndex }) => {
-        ctx.strokeStyle = `hsl(${primaryColor} / ${alpha})`;
-        ctx.lineWidth = isFundamental ? 2 : 1.5;
-        ctx.setLineDash(isFundamental ? [8, 4] : [4, 2]);
+        // Harmonic line across the spectrogram
+        ctx.strokeStyle = `hsl(${primaryColor} / ${alpha * 0.6})`;
+        ctx.lineWidth = isFundamental ? 1.5 : 1;
+        ctx.setLineDash(isFundamental ? [6, 4] : [3, 3]);
 
         ctx.beginPath();
         ctx.moveTo(padding.left, y);
         ctx.lineTo(padding.left + chartWidth, y);
         ctx.stroke();
 
-        // Build label: "H1 Fund. 131" or "H3 5th 393"
-        const intervalName = HARMONIC_LABELS[harmonicIndex] || "";
-        const hzLabel = `${Math.round(freq)}`;
-        const label = `H${harmonicIndex} ${intervalName} ${hzLabel}`;
+        // Compact right-edge badge: "H1" or "H5"
+        // Fundamental gets a slightly larger badge with Hz value
+        const shortLabel = `H${harmonicIndex}`;
+        const badgeFont = isFundamental ? "bold 10px Inter, sans-serif" : "9px Inter, sans-serif";
+        ctx.font = badgeFont;
 
-        ctx.font = isFundamental
-          ? "bold 11px Inter, sans-serif"
-          : "10px Inter, sans-serif";
-        ctx.textAlign = "left";
-        ctx.textBaseline = "middle";
+        const badgeText = isFundamental
+          ? `${shortLabel} ${Math.round(freq)}`
+          : shortLabel;
 
-        // Measure label so we can draw a fitted dark pill behind it
-        const labelX = padding.left + 4;
-        const labelY = y - 2;
-        const textWidth = ctx.measureText(label).width;
-        const pillPadH = 4;
-        const pillPadV = 3;
-        const pillX = labelX - pillPadH;
-        const pillY = labelY - 6 - pillPadV;
-        const pillW = textWidth + pillPadH * 2;
-        const pillH = 12 + pillPadV * 2;
+        const textWidth = ctx.measureText(badgeText).width;
+        const badgePadH = 4;
+        const badgePadV = 2;
+        const badgeH = (isFundamental ? 12 : 10) + badgePadV * 2;
+        const badgeW = textWidth + badgePadH * 2;
+        const badgeX = padding.left + chartWidth - badgeW - 2;
+        const badgeY = y - badgeH / 2;
 
-        // Dark pill background
-        ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+        // Badge background
+        ctx.fillStyle = isFundamental ? "rgba(0, 0, 0, 0.8)" : "rgba(0, 0, 0, 0.65)";
         ctx.beginPath();
-        ctx.roundRect(pillX, pillY, pillW, pillH, 3);
+        ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 3);
         ctx.fill();
 
-        // Label text
+        // Badge border
+        ctx.strokeStyle = `hsl(${primaryColor} / ${isFundamental ? 0.6 : 0.3})`;
+        ctx.lineWidth = 0.5;
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 3);
+        ctx.stroke();
+
+        // Badge text
         ctx.fillStyle = isFundamental
           ? `hsl(${primaryColor} / 1.0)`
-          : `hsl(${primaryColor} / ${Math.min(0.95, alpha + 0.3)})`;
-        ctx.fillText(label, labelX, labelY);
+          : `hsl(${primaryColor} / ${Math.min(0.9, alpha + 0.3)})`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(badgeText, badgeX + badgeW / 2, badgeY + badgeH / 2);
       });
 
       ctx.setLineDash([]);
@@ -1046,47 +1110,40 @@ export const SpectrogramCanvas = forwardRef<
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Target label on right side
+      // Target badge on right side — compact with dark background
       const intervalName = HARMONIC_LABELS[targetHarmonic] || "";
-      const label = `→ H${targetHarmonic} ${intervalName} ${Math.round(targetFreq)}Hz`;
-      ctx.font = "bold 11px Inter, sans-serif";
-      ctx.textAlign = "right";
-      ctx.textBaseline = "middle";
+      const targetLabel = isHitting
+        ? `✓ H${targetHarmonic} ${intervalName}`
+        : `→ H${targetHarmonic} ${intervalName}`;
 
-      // Dark pill behind target label
-      const targetLabelX = padding.left + chartWidth - 4;
-      const targetLabelY = targetY - 8;
-      const targetTextWidth = ctx.measureText(label).width;
-      const tPadH = 5;
-      const tPadV = 3;
-      ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+      ctx.font = "bold 10px Inter, sans-serif";
+      const targetTextWidth = ctx.measureText(targetLabel).width;
+      const tBadgePadH = 5;
+      const tBadgePadV = 3;
+      const tBadgeW = targetTextWidth + tBadgePadH * 2;
+      const tBadgeH = 14 + tBadgePadV * 2;
+      const tBadgeX = padding.left + chartWidth - tBadgeW - 2;
+      const tBadgeY = targetY - 12 - tBadgeH;
+
+      // Badge background
+      ctx.fillStyle = isHitting ? "rgba(0, 40, 20, 0.85)" : "rgba(0, 0, 0, 0.75)";
       ctx.beginPath();
-      ctx.roundRect(
-        targetLabelX - targetTextWidth - tPadH,
-        targetLabelY - 6 - tPadV,
-        targetTextWidth + tPadH * 2,
-        12 + tPadV * 2,
-        3,
-      );
+      ctx.roundRect(tBadgeX, tBadgeY, tBadgeW, tBadgeH, 4);
       ctx.fill();
 
-      ctx.fillStyle = guideColor;
-      ctx.fillText(label, targetLabelX, targetLabelY);
+      // Badge border
+      ctx.strokeStyle = isHitting ? "rgba(0, 255, 120, 0.5)" : "rgba(255, 200, 0, 0.3)";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.roundRect(tBadgeX, tBadgeY, tBadgeW, tBadgeH, 4);
+      ctx.stroke();
 
-      // Hit indicator
-      if (isHitting) {
-        const checkX = padding.left + chartWidth - 60;
-        const checkY = targetY - 8;
-        ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-        ctx.beginPath();
-        ctx.roundRect(checkX - 9, checkY - 9, 18, 18, 3);
-        ctx.fill();
-        ctx.fillStyle = "rgba(0, 255, 120, 0.9)";
-        ctx.font = "bold 12px Inter, sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("✓", checkX, checkY);
-      }
+      // Badge text
+      ctx.fillStyle = guideColor;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(targetLabel, tBadgeX + tBadgeW / 2, tBadgeY + tBadgeH / 2);
     };
 
     const drawPlaybackIndicator = (
