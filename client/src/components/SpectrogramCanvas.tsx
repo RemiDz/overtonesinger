@@ -416,7 +416,9 @@ export const SpectrogramCanvas = forwardRef<
       ctx.font = "11px Inter, sans-serif";
       ctx.textAlign = "right";
       ctx.textBaseline = "middle";
-      ctx.fillStyle = cachedColors.fg;
+      ctx.fillStyle = showFrequencyMarkers
+        ? "rgba(255, 255, 255, 0.3)"
+        : cachedColors.fg;
 
       freqLabels.forEach((freq) => {
         const y = freqToY(freq, padding.top, chartHeight);
@@ -835,18 +837,39 @@ export const SpectrogramCanvas = forwardRef<
         ctx.lineTo(padding.left + chartWidth, y);
         ctx.stroke();
 
-        // Build label: "H1 Fund. 131Hz" or "H3 5th 393Hz"
+        // Build label: "H1 Fund. 131" or "H3 5th 393"
         const intervalName = HARMONIC_LABELS[harmonicIndex] || "";
         const hzLabel = `${Math.round(freq)}`;
         const label = `H${harmonicIndex} ${intervalName} ${hzLabel}`;
 
-        ctx.fillStyle = `hsl(${primaryColor} / ${Math.min(0.9, alpha + 0.2)})`;
         ctx.font = isFundamental
           ? "bold 11px Inter, sans-serif"
           : "10px Inter, sans-serif";
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
-        ctx.fillText(label, 2, y - 2);
+
+        // Measure label so we can draw a fitted dark pill behind it
+        const labelX = padding.left + 4;
+        const labelY = y - 2;
+        const textWidth = ctx.measureText(label).width;
+        const pillPadH = 4;
+        const pillPadV = 3;
+        const pillX = labelX - pillPadH;
+        const pillY = labelY - 6 - pillPadV;
+        const pillW = textWidth + pillPadH * 2;
+        const pillH = 12 + pillPadV * 2;
+
+        // Dark pill background
+        ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+        ctx.beginPath();
+        ctx.roundRect(pillX, pillY, pillW, pillH, 3);
+        ctx.fill();
+
+        // Label text
+        ctx.fillStyle = isFundamental
+          ? `hsl(${primaryColor} / 1.0)`
+          : `hsl(${primaryColor} / ${Math.min(0.95, alpha + 0.3)})`;
+        ctx.fillText(label, labelX, labelY);
       });
 
       ctx.setLineDash([]);
@@ -1026,18 +1049,43 @@ export const SpectrogramCanvas = forwardRef<
       // Target label on right side
       const intervalName = HARMONIC_LABELS[targetHarmonic] || "";
       const label = `→ H${targetHarmonic} ${intervalName} ${Math.round(targetFreq)}Hz`;
-      ctx.fillStyle = guideColor;
       ctx.font = "bold 11px Inter, sans-serif";
       ctx.textAlign = "right";
       ctx.textBaseline = "middle";
-      ctx.fillText(label, padding.left + chartWidth - 4, targetY - 8);
+
+      // Dark pill behind target label
+      const targetLabelX = padding.left + chartWidth - 4;
+      const targetLabelY = targetY - 8;
+      const targetTextWidth = ctx.measureText(label).width;
+      const tPadH = 5;
+      const tPadV = 3;
+      ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+      ctx.beginPath();
+      ctx.roundRect(
+        targetLabelX - targetTextWidth - tPadH,
+        targetLabelY - 6 - tPadV,
+        targetTextWidth + tPadH * 2,
+        12 + tPadV * 2,
+        3,
+      );
+      ctx.fill();
+
+      ctx.fillStyle = guideColor;
+      ctx.fillText(label, targetLabelX, targetLabelY);
 
       // Hit indicator
       if (isHitting) {
+        const checkX = padding.left + chartWidth - 60;
+        const checkY = targetY - 8;
+        ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+        ctx.beginPath();
+        ctx.roundRect(checkX - 9, checkY - 9, 18, 18, 3);
+        ctx.fill();
         ctx.fillStyle = "rgba(0, 255, 120, 0.9)";
         ctx.font = "bold 12px Inter, sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText("✓", padding.left + chartWidth - 60, targetY - 8);
+        ctx.textBaseline = "middle";
+        ctx.fillText("✓", checkX, checkY);
       }
     };
 
