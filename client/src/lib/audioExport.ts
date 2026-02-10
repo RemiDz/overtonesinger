@@ -50,10 +50,20 @@ export function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-export function exportCanvasToPNG(canvas: HTMLCanvasElement, filename: string) {
-  canvas.toBlob((blob) => {
-    if (blob) {
-      downloadBlob(blob, filename);
-    }
-  }, 'image/png');
+export async function exportCanvasToPNG(canvas: HTMLCanvasElement, filename: string): Promise<'shared' | 'downloaded'> {
+  const { shareOrDownload } = await import('./shareUtils');
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(async (blob) => {
+      if (!blob) {
+        reject(new Error('Failed to create image blob'));
+        return;
+      }
+      try {
+        const result = await shareOrDownload(blob, filename);
+        resolve(result);
+      } catch (err) {
+        reject(err);
+      }
+    }, 'image/png');
+  });
 }

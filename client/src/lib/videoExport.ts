@@ -142,14 +142,8 @@ function getSupportedMimeType(): MimeTypeInfo {
   return { mimeType: '', isMobileFriendly: false, extension: 'webm' };
 }
 
-export function downloadVideoBlob(blob: Blob, baseFilename: string, extension: string) {
+export async function downloadVideoBlob(blob: Blob, baseFilename: string, extension: string): Promise<'shared' | 'downloaded'> {
+  const { shareOrDownload } = await import('./shareUtils');
   const filename = `${baseFilename}.${extension}`;
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  return shareOrDownload(blob, filename);
 }

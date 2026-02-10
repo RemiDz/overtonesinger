@@ -8,7 +8,7 @@ import { UpgradeModal } from '@/components/UpgradeModal';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useProStatus } from '@/hooks/useProStatus';
 import { useToast } from '@/hooks/use-toast';
-import { exportToWAV, downloadBlob, exportCanvasToPNG } from '@/lib/audioExport';
+import { exportToWAV, exportCanvasToPNG } from '@/lib/audioExport';
 import { createVideoExportRecorder, downloadVideoBlob } from '@/lib/videoExport';
 import { convertWebMToMP4, isFFmpegAvailable } from '@/lib/ffmpegConverter';
 import { Sun, Contrast, Palette, Activity, Focus, Target, Maximize, Minimize, Star, Lock, Check, Timer } from 'lucide-react';
@@ -471,7 +471,7 @@ export default function VocalAnalyzer() {
     });
   };
 
-  const handleExportWAV = () => {
+  const handleExportWAV = async () => {
     if (!isProUser) {
       setShowUpgradeModal(true);
       return;
@@ -486,14 +486,16 @@ export default function VocalAnalyzer() {
     }
 
     try {
+      const { shareOrDownload } = await import('@/lib/shareUtils');
       const wavBlob = exportToWAV(audioBuffer, sampleRate);
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-      downloadBlob(wavBlob, `vocal-recording-${timestamp}.wav`);
+      const result = await shareOrDownload(wavBlob, `vocal-recording-${timestamp}.wav`);
       toast({
         title: 'Export Successful',
-        description: 'WAV file downloaded',
+        description: result === 'shared' ? 'WAV file shared' : 'WAV file downloaded',
       });
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
       toast({
         variant: 'destructive',
         title: 'Export Failed',
@@ -502,7 +504,7 @@ export default function VocalAnalyzer() {
     }
   };
 
-  const handleExportPNG = () => {
+  const handleExportPNG = async () => {
     if (!isProUser) {
       setShowUpgradeModal(true);
       return;
@@ -519,12 +521,13 @@ export default function VocalAnalyzer() {
 
     try {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-      exportCanvasToPNG(canvas, `spectrogram-${timestamp}.png`);
+      const result = await exportCanvasToPNG(canvas, `spectrogram-${timestamp}.png`);
       toast({
         title: 'Export Successful',
-        description: 'PNG image downloaded',
+        description: result === 'shared' ? 'PNG image shared' : 'PNG image downloaded',
       });
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
       toast({
         variant: 'destructive',
         title: 'Export Failed',
@@ -617,21 +620,25 @@ export default function VocalAnalyzer() {
       // If the recorder already produced a mobile-friendly format (MP4),
       // download directly — no FFmpeg conversion needed
       if (mimeTypeInfo.isMobileFriendly) {
-        downloadVideoBlob(videoBlob, baseFilename, mimeTypeInfo.extension);
+        const result = await downloadVideoBlob(videoBlob, baseFilename, mimeTypeInfo.extension);
         toast({
           title: 'Export Successful',
-          description: `Video downloaded as ${baseFilename}.${mimeTypeInfo.extension}`,
+          description: result === 'shared'
+            ? `Video shared as ${baseFilename}.${mimeTypeInfo.extension}`
+            : `Video downloaded as ${baseFilename}.${mimeTypeInfo.extension}`,
         });
         return;
       }
 
       // Recorder produced WebM — try converting to MP4 for mobile compatibility
       if (!isFFmpegAvailable()) {
-        downloadVideoBlob(videoBlob, baseFilename, mimeTypeInfo.extension);
+        const result = await downloadVideoBlob(videoBlob, baseFilename, mimeTypeInfo.extension);
         
         toast({
           title: `Video Export (${mimeTypeInfo.extension.toUpperCase()})`,
-          description: `Downloaded as ${baseFilename}.${mimeTypeInfo.extension}. MP4 conversion unavailable (requires cross-origin isolation). ${mimeTypeInfo.extension === 'webm' ? 'WebM may not play on mobile devices.' : ''}`,
+          description: result === 'shared'
+            ? `Shared as ${baseFilename}.${mimeTypeInfo.extension}.`
+            : `Downloaded as ${baseFilename}.${mimeTypeInfo.extension}. MP4 conversion unavailable (requires cross-origin isolation). ${mimeTypeInfo.extension === 'webm' ? 'WebM may not play on mobile devices.' : ''}`,
           duration: 10000,
         });
         return;
@@ -650,20 +657,24 @@ export default function VocalAnalyzer() {
           },
         });
 
-        downloadVideoBlob(mp4Blob, baseFilename, 'mp4');
+        const result = await downloadVideoBlob(mp4Blob, baseFilename, 'mp4');
 
         toast({
           title: 'Export Successful',
-          description: `Video downloaded as ${baseFilename}.mp4 (mobile-friendly format)`,
+          description: result === 'shared'
+            ? `Video shared as ${baseFilename}.mp4 (mobile-friendly format)`
+            : `Video downloaded as ${baseFilename}.mp4 (mobile-friendly format)`,
         });
       } catch (conversionError) {
         console.error('Video conversion failed:', conversionError);
         
-        downloadVideoBlob(videoBlob, baseFilename, mimeTypeInfo.extension);
+        const fallbackResult = await downloadVideoBlob(videoBlob, baseFilename, mimeTypeInfo.extension);
         
         toast({
           title: `Video Export (${mimeTypeInfo.extension.toUpperCase()})`,
-          description: `Downloaded as ${baseFilename}.${mimeTypeInfo.extension}. MP4 conversion failed. WebM may not play on mobile devices.`,
+          description: fallbackResult === 'shared'
+            ? `Shared as ${baseFilename}.${mimeTypeInfo.extension}. MP4 conversion failed.`
+            : `Downloaded as ${baseFilename}.${mimeTypeInfo.extension}. MP4 conversion failed. WebM may not play on mobile devices.`,
           duration: 8000,
         });
       }
