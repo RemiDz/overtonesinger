@@ -761,7 +761,7 @@ export default function VocalAnalyzer() {
                 <p>User Guide</p>
               </TooltipContent>
             </Tooltip>
-            {/* TEMP: All features unlocked — re-enable Pro gating later
+            {/* TEMP: All features unlocked — re-enable Pro gating later */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -787,7 +787,6 @@ export default function VocalAnalyzer() {
                 <p>{isProUser ? 'Pro Active' : 'Upgrade to Pro'}</p>
               </TooltipContent>
             </Tooltip>
-            */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
