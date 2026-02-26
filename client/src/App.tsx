@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import VocalAnalyzer from "@/pages/VocalAnalyzer";
+import Guide from "@/pages/Guide";
 import NotFound from "@/pages/not-found";
 
 // Get base path for GitHub Pages deployment
@@ -14,6 +15,7 @@ function AppRouter() {
     <Router base={base}>
       <Switch>
         <Route path="/" component={VocalAnalyzer} />
+        <Route path="/guide" component={Guide} />
         <Route component={NotFound} />
       </Switch>
     </Router>
