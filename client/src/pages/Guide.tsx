@@ -175,7 +175,7 @@ export default function Guide() {
           <p>
             <Link href="/" className="text-primary hover:underline">overtonesinger.com</Link>
           </p>
-          <p>Part of the NestorLab ecosystem</p>
+          <p>Part of the Nestorium</p>
         </footer>
       </div>
 
