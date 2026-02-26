@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { Link } from 'wouter';
 import { SpectrogramCanvas, type SpectrogramCanvasHandle } from '@/components/SpectrogramCanvas';
 import { TransportControls } from '@/components/TransportControls';
 import { SliderControl } from '@/components/SliderControl';
@@ -11,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { exportToWAV, exportCanvasToPNG } from '@/lib/audioExport';
 import { createVideoExportRecorder, downloadVideoBlob } from '@/lib/videoExport';
 import { convertWebMToMP4, isFFmpegAvailable } from '@/lib/ffmpegConverter';
-import { Sun, Contrast, Palette, Activity, Focus, Target, Maximize, Minimize, Star, Lock, Check, Timer } from 'lucide-react';
+import { Sun, Contrast, Palette, Activity, Focus, Target, Maximize, Minimize, Star, Lock, Check, Timer, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { RecordingState, AudioSettings, ViewportSettings, IntensityScaleMode, ColorScheme, FFTSize } from '@shared/schema';
@@ -739,7 +740,28 @@ export default function VocalAnalyzer() {
             <div className="text-sm font-medium text-muted-foreground hidden sm:block">
               {getStatusText()}
             </div>
-            {/* Pro Button */}
+            {/* User Guide Link */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link href="/guide">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground hover:text-primary"
+                    asChild
+                  >
+                    <span>
+                      <HelpCircle className="h-4 w-4" />
+                      <span className="sr-only">User Guide</span>
+                    </span>
+                  </Button>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>User Guide</p>
+              </TooltipContent>
+            </Tooltip>
+            {/* TEMP: All features unlocked — re-enable Pro gating later
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -765,6 +787,7 @@ export default function VocalAnalyzer() {
                 <p>{isProUser ? 'Pro Active' : 'Upgrade to Pro'}</p>
               </TooltipContent>
             </Tooltip>
+            */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -924,15 +947,16 @@ export default function VocalAnalyzer() {
         />
       </div>
 
-      {/* Upgrade Modal */}
+      {/* TEMP: All features unlocked — re-enable Pro gating later
       <UpgradeModal
         open={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         onActivate={activate}
         isActivating={isActivating}
       />
+      */}
 
-      {/* Session Limit Modal */}
+      {/* TEMP: All features unlocked — re-enable Pro gating later
       {showSessionLimitModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
@@ -969,6 +993,7 @@ export default function VocalAnalyzer() {
           </div>
         </div>
       )}
+      */}
     </div>
   );
 }
